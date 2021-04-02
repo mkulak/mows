@@ -9,13 +9,12 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.vertx.core.Vertx
 import io.vertx.core.http.ServerWebSocket
 import io.vertx.kotlin.coroutines.await
 import mu.KLogging
 import java.lang.Integer.toHexString
-import kotlin.random.Random
+import kotlin.random.Random.Default.nextDouble
 import kotlin.random.Random.Default.nextInt
 import com.fasterxml.jackson.annotation.JsonCreator.Mode.DELEGATING as embed
 
@@ -49,7 +48,7 @@ class WsApi(val mapper: ObjectMapper) {
     fun handle(ws: ServerWebSocket) {
         ws.accept()
         val playerId = PlayerId(nextId())
-        val client = ConnectedClient(playerId, ws, nextInt(500), nextInt(500))
+        val client = ConnectedClient(playerId, ws, XY(nextDouble(500.0), nextDouble(500.0)))
         clients[playerId] = client
         logger.info("Joined $playerId on ${ws.path()}")
         ws.textMessageHandler { msg ->
@@ -59,7 +58,8 @@ class WsApi(val mapper: ObjectMapper) {
             logger.info("Disconnected $playerId")
             clients.remove(playerId)
         }
-        client.send(LoginMessage(playerId, client.x, client.y))
+        client.send(LoginMessage(playerId.value))
+        client.send(UpdateMessage(playerId.value, client.pos))
     }
 
     private fun handleClientCommand(msg: String, playerId: PlayerId) {
@@ -70,8 +70,8 @@ class WsApi(val mapper: ObjectMapper) {
             logger.warn("Unknown client $playerId")
             return
         }
-        val newClient = oldClient.copy(x = command.x, y= command.y)
-        val response = UpdateMessage(playerId, newClient.x, newClient.y)
+        val newClient = oldClient.copy(pos = command.pos)
+        val response = UpdateMessage(playerId.value, newClient.pos)
         clients[playerId] = newClient
         clients.values.forEach {
             it.send(response)
@@ -88,8 +88,7 @@ class WsApi(val mapper: ObjectMapper) {
 data class ConnectedClient(
     val id: PlayerId,
     val ws: ServerWebSocket,
-    val x: Int,
-    val y: Int
+    val pos: XY
 )
 
 data class PlayerId @JsonCreator(mode = embed) constructor(@JsonValue val value: String) {
@@ -98,11 +97,3 @@ data class PlayerId @JsonCreator(mode = embed) constructor(@JsonValue val value:
 
 fun nextId(): String = toHexString(nextInt()).toString()
 
-sealed class ServerMessage(val type: String)
-
-data class LoginMessage(val id: PlayerId, val x: Int, val y: Int) : ServerMessage("login")
-data class UpdateMessage(val id: PlayerId, val x: Int, val y: Int) : ServerMessage("update")
-
-sealed class ClientCommand
-
-data class MoveCommand(val x: Int, val y: Int) : ClientCommand()
