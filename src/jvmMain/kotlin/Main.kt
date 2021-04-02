@@ -57,9 +57,15 @@ class WsApi(val mapper: ObjectMapper) {
         ws.closeHandler {
             logger.info("Disconnected $playerId")
             clients.remove(playerId)
+            broadcast(RemovePlayerMessage(playerId.value))
         }
         client.send(LoginMessage(playerId.value))
-        client.send(UpdateMessage(playerId.value, client.pos))
+        broadcast(UpdateMessage(playerId.value, client.pos))
+        clients.values.forEach {
+            if (it.id != client.id) {
+                client.send(UpdateMessage(it.id.value, it.pos))
+            }
+        }
     }
 
     private fun handleClientCommand(msg: String, playerId: PlayerId) {
@@ -71,10 +77,13 @@ class WsApi(val mapper: ObjectMapper) {
             return
         }
         val newClient = oldClient.copy(pos = command.pos)
-        val response = UpdateMessage(playerId.value, newClient.pos)
         clients[playerId] = newClient
+        broadcast(UpdateMessage(playerId.value, newClient.pos))
+    }
+
+    fun broadcast(message: ServerMessage) {
         clients.values.forEach {
-            it.send(response)
+            it.send(message)
         }
     }
 

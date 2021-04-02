@@ -45,10 +45,9 @@ private fun changePos(dxy: XY) {
 private fun connect() {
     socket = WebSocket("ws://localhost:8081")
     socket?.onmessage = {
-        val data = it.data as String
-        val cmd: dynamic = JSON.parse(data)
         console.log("received ${it.data}")
-        when (cmd.type) {
+        val data = it.data as String
+        when (JSON.parse<dynamic>(data).type) {
             "login" -> {
                 val message = JSON.parse<LoginMessage>(data)
                 println("received login: $message")
@@ -57,7 +56,12 @@ private fun connect() {
             "update" -> {
                 val message = JSON.parse<UpdateMessage>(data)
                 println("received update: $message")
-                players[cmd.id] = message.pos
+                players[message.id] = message.pos
+            }
+            "remove" -> {
+                val message = JSON.parse<RemovePlayerMessage>(data)
+                println("received remove: $message")
+                players.remove(message.id)
             }
         }
         null
@@ -85,7 +89,7 @@ private fun draw(timestamp: Double) {
         ctx.fill()
 
         ctx.lineWidth = 1.0
-        ctx.strokeStyle = "#003300"
+        ctx.strokeStyle = "#777777"
         ctx.stroke()
     }
 
