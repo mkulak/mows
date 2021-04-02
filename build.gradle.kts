@@ -85,8 +85,8 @@ kotlin {
         }
         val jsMain by getting {
             dependencies {
-                implementation("org.jetbrains:kotlin-react:16.13.1-pre.113-kotlin-1.4.0")
-                implementation("org.jetbrains:kotlin-react-dom:16.13.1-pre.113-kotlin-1.4.0")
+//                implementation("org.jetbrains:kotlin-react:16.13.1-pre.113-kotlin-1.4.0")
+//                implementation("org.jetbrains:kotlin-react-dom:16.13.1-pre.113-kotlin-1.4.0")
             }
         }
         val jsTest by getting {

@@ -27,9 +27,9 @@ suspend fun main() {
 //        .requestHandler(httpApi.createApi())
         .webSocketHandler(wsApi::handle)
         .exceptionHandler { it.printStackTrace() }
-        .listen(8080)
+        .listen(8081)
         .await()
-    println("Started")
+    println("Started at :8081")
 }
 
 fun createObjectMapper(): ObjectMapper =

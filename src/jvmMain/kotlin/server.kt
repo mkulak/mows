@@ -20,6 +20,11 @@ fun HTML.index() {
         div {
             id = "root"
         }
+        canvas {
+            id = "canvas"
+            width = "1000px"
+            height = "500px"
+        }
         script(src = "/static/output.js") {}
     }
 }
