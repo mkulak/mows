@@ -14,14 +14,8 @@ fun HTML.index() {
         title("Hello from Ktor!")
     }
     body {
-        div {
-            +"Hello from Ktor"
-        }
-        div {
-            id = "root"
-        }
         canvas {
-            id = "canvas"
+            id = "root"
             width = "1000px"
             height = "500px"
         }

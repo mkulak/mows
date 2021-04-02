@@ -59,7 +59,7 @@ class WsApi(val mapper: ObjectMapper) {
             logger.info("Disconnected $playerId")
             clients.remove(playerId)
         }
-        client.send(LoginMessage(playerId))
+        client.send(LoginMessage(playerId, client.x, client.y))
     }
 
     private fun handleClientCommand(msg: String, playerId: PlayerId) {
@@ -100,7 +100,7 @@ fun nextId(): String = toHexString(nextInt()).toString()
 
 sealed class ServerMessage(val type: String)
 
-data class LoginMessage(val id: PlayerId) : ServerMessage("login")
+data class LoginMessage(val id: PlayerId, val x: Int, val y: Int) : ServerMessage("login")
 data class UpdateMessage(val id: PlayerId, val x: Int, val y: Int) : ServerMessage("update")
 
 sealed class ClientCommand
