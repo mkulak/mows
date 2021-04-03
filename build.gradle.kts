@@ -113,6 +113,6 @@ tasks.getByName<JavaExec>("run") {
 
 val buildJs by tasks.registering(Copy::class) {
     dependsOn(tasks.getByName<Task>("jsBrowserDevelopmentWebpack"))
-    from("jvmMain/resources", "build/distributions")
+    from("src/jvmMain/resources", "build/distributions")
     into("output")
 }
