@@ -5,8 +5,13 @@ data class XY(val x: Double, val y: Double)
 operator fun XY.plus(other: XY): XY = XY(x + other.x, y + other.y)
 operator fun XY.minus(other: XY): XY = XY(x - other.x, y - other.y)
 operator fun XY.times(mul: Double): XY = XY(x * mul, y * mul)
-fun XY.normalize(): XY = length().let { XY(x / it, y / it) }
 fun XY.length(): Double = sqrt(x * x + y * y)
+fun XY.normalize(): XY {
+    val length = length()
+    return if (length != 0.0) XY(x / length, y / length) else ZERO_XY
+}
+
+val ZERO_XY = XY(0.0, 0.0)
 
 
 sealed class ServerMessage(val type: String)

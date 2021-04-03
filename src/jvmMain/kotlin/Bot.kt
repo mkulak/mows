@@ -3,17 +3,19 @@ import io.vertx.core.Vertx
 import io.vertx.core.http.WebSocket
 import io.vertx.kotlin.coroutines.awaitResult
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextDouble
+import kotlin.random.Random.Default.nextLong
 
 suspend fun main() {
     val mapper = createObjectMapper()
     val vertx = Vertx.vertx()
     val scope = CoroutineScope(coroutineContext)
-    repeat(10) {
-        scope.launch {
+    repeat(300) {
+        GlobalScope.launch {
             startBot(vertx, mapper)
         }
     }
@@ -23,11 +25,11 @@ suspend fun main() {
 private suspend fun startBot(vertx: Vertx, mapper: ObjectMapper) {
     val ws = awaitResult<WebSocket> { handler ->
         vertx.createHttpClient().webSocket(8081, "localhost", "/") {
-            if (it.succeeded()) {
-                it.result().textMessageHandler {
-                    println(it)
-                }
-            }
+//            if (it.succeeded()) {
+//                it.result().textMessageHandler {
+//                    println(it)
+//                }
+//            }
             handler.handle(it)
         }
     }
@@ -35,6 +37,7 @@ private suspend fun startBot(vertx: Vertx, mapper: ObjectMapper) {
     var pos = XY(nextDouble(1000.0), nextDouble(500.0))
     var target = pos
     val inc = 10.0
+    delay(nextLong(1000))
     while (true) {
         val diff = target - pos
         if (diff.length() > 10) {
@@ -44,6 +47,6 @@ private suspend fun startBot(vertx: Vertx, mapper: ObjectMapper) {
         } else {
             target = XY(nextDouble(1000.0), nextDouble(500.0))
         }
-        delay(33)
+        delay(nextLong(1000))
     }
 }

@@ -9,21 +9,37 @@ var lastTime: Double? = null
 var socket: WebSocket? = null
 var myId = ""
 val players = mutableMapOf<String, XY>()
+val inc = 10.0
+var isMouseDown = false
+var lastMousePos = ZERO_XY
 
 fun main() {
     window.onkeydown = {
-        val inc = 10.0
 //        window.alert("onkeydown ${it.keyCode}")
-        console.log("onkeydown ${it.keyCode}")
+//        console.log("onkeydown ${it.keyCode}")
         val dxy = when (it.keyCode) {
             37 -> XY(-inc, 0.0) // left
             38 -> XY(0.0, -inc) // up
             39 -> XY(inc, 0.0) // right
             40 -> XY(0.0, inc) // down
-            else -> XY(0.0, 0.0)
+            else -> null
         }
-        changePos(dxy)
-        it.preventDefault()
+        if (dxy != null) {
+            changePos(dxy)
+            it.preventDefault()
+        } 
+    }
+    window.onmousedown = {
+        isMouseDown = true
+        null
+    }
+    window.onmouseup = {
+        isMouseDown = false
+        null
+    }
+    window.onmousemove = {
+        lastMousePos = XY(it.offsetX, it.offsetY)
+        null
     }
     window.onload = {
         window.requestAnimationFrame(::draw)
@@ -31,13 +47,24 @@ fun main() {
     }
 }
 
+private fun tryMove(dt: Double) {
+    val myPos = players[myId]
+    if (myPos != null && isMouseDown) {
+        val dxy = lastMousePos - myPos
+        val length = dxy.length()
+        if (length > inc) {
+            changePos(dxy.normalize() * dt)
+        }
+    }
+}
+
 private fun changePos(dxy: XY) {
     val me = players[myId]
-    console.log("changePos $me $dxy")
+//    console.log("changePos $me $dxy")
     if (me != null) {
         val newPos = me + dxy
         val data = JSON.stringify(MoveCommand(newPos))
-        console.log("changePos data $data")
+//        console.log("changePos data $data")
         socket?.send(data)
     }
 }
@@ -45,22 +72,22 @@ private fun changePos(dxy: XY) {
 private fun connect() {
     socket = WebSocket("ws://localhost:8081")
     socket?.onmessage = {
-        console.log("received ${it.data}")
+//        console.log("received ${it.data}")
         val data = it.data as String
         when (JSON.parse<dynamic>(data).type) {
             "login" -> {
                 val message = JSON.parse<LoginMessage>(data)
-                println("received login: $message")
+//                console.log("received login: $message")
                 myId = message.id
             }
             "update" -> {
                 val message = JSON.parse<UpdateMessage>(data)
-                println("received update: $message")
+//                console.log("received update: $message")
                 players[message.id] = message.pos
             }
             "remove" -> {
                 val message = JSON.parse<RemovePlayerMessage>(data)
-                println("received remove: $message")
+//                console.log("received remove: $message")
                 players.remove(message.id)
             }
         }
@@ -73,6 +100,7 @@ private fun draw(timestamp: Double) {
     val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
 //    val dt = timestamp - (lastTime ?: timestamp)
 //    x = (x + dt) % canvas.width
+    tryMove(timestamp - (lastTime ?: timestamp))
     lastTime = timestamp
     ctx.beginPath()
     ctx.fillStyle = "white"

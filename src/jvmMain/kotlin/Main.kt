@@ -9,8 +9,12 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.vertx.core.Handler
 import io.vertx.core.Vertx
+import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.ServerWebSocket
+import io.vertx.ext.web.Router
+import io.vertx.ext.web.handler.StaticHandler
 import io.vertx.kotlin.coroutines.await
 import mu.KLogging
 import java.lang.Integer.toHexString
@@ -22,9 +26,10 @@ suspend fun main() {
     val vertx = Vertx.vertx()
     val mapper = createObjectMapper()
     val wsApi = WsApi(mapper)
+    val httpApi = HttpApi(vertx)
     vertx.createHttpServer()
-//        .requestHandler(httpApi.createApi())
-        .webSocketHandler(wsApi::handle)
+        .requestHandler(httpApi)
+        .webSocketHandler(wsApi)
         .exceptionHandler { it.printStackTrace() }
         .listen(8081)
         .await()
@@ -42,10 +47,10 @@ fun createObjectMapper(): ObjectMapper =
         .registerModule(JavaTimeModule())
 
 
-class WsApi(val mapper: ObjectMapper) {
+class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
     private val clients = mutableMapOf<PlayerId, ConnectedClient>()
 
-    fun handle(ws: ServerWebSocket) {
+    override fun handle(ws: ServerWebSocket) {
         ws.accept()
         val playerId = PlayerId(nextId())
         val client = ConnectedClient(playerId, ws, XY(nextDouble(500.0), nextDouble(500.0)))
@@ -69,7 +74,7 @@ class WsApi(val mapper: ObjectMapper) {
     }
 
     private fun handleClientCommand(msg: String, playerId: PlayerId) {
-        logger.info("Got $msg from $playerId")
+//        logger.info("Got $msg from $playerId")
         val command = mapper.readValue<MoveCommand>(msg)
         val oldClient = clients[playerId]
         if (oldClient == null) {
@@ -92,6 +97,16 @@ class WsApi(val mapper: ObjectMapper) {
     }
 
     companion object : KLogging()
+}
+
+class HttpApi(vertx: Vertx) : Handler<HttpServerRequest> {
+    val router = Router.router(vertx)
+    init {
+        router.get("/*").handler(StaticHandler.create("build/distributions").setCachingEnabled(true).setMaxAgeSeconds(0))
+    }
+    override fun handle(event: HttpServerRequest) {
+        router.handle(event)
+    }
 }
 
 data class ConnectedClient(
