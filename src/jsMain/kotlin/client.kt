@@ -12,6 +12,7 @@ val players = mutableMapOf<String, XY>()
 val inc = 10.0
 var isMouseDown = false
 var lastMousePos = ZERO_XY
+var gamepadIndex: Int? = null
 
 fun main() {
     window.onkeydown = {
@@ -45,6 +46,14 @@ fun main() {
         window.requestAnimationFrame(::draw)
         connect()
     }
+    window.addEventListener("gamepadconnected", { event: dynamic ->
+        println("gamepad connected $event ${event.gamepad.index}")
+        gamepadIndex = event.gamepad.index
+    })
+    window.addEventListener("gamepaddisconnected", {
+        println("gamepad disconnected $it")
+        gamepadIndex = null
+    })
 }
 
 private fun tryMove(dt: Double) {
@@ -55,6 +64,24 @@ private fun tryMove(dt: Double) {
         if (length > inc) {
             changePos(dxy.normalize() * dt)
         }
+    }
+}
+
+private fun tryMoveViaGamepad(dt: Double) {
+    if (gamepadIndex == null) {
+        return
+    }
+    val gamepad = js("navigator").getGamepads()[gamepadIndex]
+    val dxy = XY(gamepad.axes[0], gamepad.axes[1])
+    if (dxy.length() > 0.5) {
+        println("gamepad dxy: $dxy")
+        changePos(dxy.normalize() * dt)
+    }
+    if (gamepad.buttons.iterator().asSequence().any { it.pressed }) {
+        gamepad.vibrationActuator.playEffect(
+            "dual-rumble",
+            js("{ duration: 500, strongMagnitude: 1.0, weakMagnitude: 1.0 }")
+        )
     }
 }
 
@@ -101,7 +128,9 @@ private fun draw(timestamp: Double) {
     val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
 //    val dt = timestamp - (lastTime ?: timestamp)
 //    x = (x + dt) % canvas.width
-    tryMove(timestamp - (lastTime ?: timestamp))
+    val dt = timestamp - (lastTime ?: timestamp)
+    tryMove(dt)
+    tryMoveViaGamepad(dt)
     lastTime = timestamp
     ctx.beginPath()
     ctx.fillStyle = "white"
@@ -124,3 +153,15 @@ private fun draw(timestamp: Double) {
 
     window.requestAnimationFrame(::draw)
 }
+
+
+//external class Gamepad(
+//    val axes: Array<Double>,
+//    val buttons: Array<GamepadButton>,
+//    val connected: boolean;
+//    val hapticActuators: Array<GamepadHapticActuator>;
+//    id: string;
+//    index: number;
+//    mapping: GamepadMappingType;
+//    timestamp: number;
+//}
