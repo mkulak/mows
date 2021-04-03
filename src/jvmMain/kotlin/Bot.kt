@@ -2,19 +2,17 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.vertx.core.Vertx
 import io.vertx.core.http.WebSocket
 import io.vertx.kotlin.coroutines.awaitResult
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextDouble
 import kotlin.random.Random.Default.nextLong
 
 suspend fun main() {
     val mapper = createObjectMapper()
     val vertx = Vertx.vertx()
-    val scope = CoroutineScope(coroutineContext)
-    repeat(300) {
+//    val scope = CoroutineScope(coroutineContext)
+    repeat(100) {
         GlobalScope.launch {
             startBot(vertx, mapper)
         }
@@ -24,7 +22,7 @@ suspend fun main() {
 
 private suspend fun startBot(vertx: Vertx, mapper: ObjectMapper) {
     val ws = awaitResult<WebSocket> { handler ->
-        vertx.createHttpClient().webSocket(8081, "localhost", "/") {
+        vertx.createHttpClient().webSocket(8080, "localhost", "/") {
 //            if (it.succeeded()) {
 //                it.result().textMessageHandler {
 //                    println(it)

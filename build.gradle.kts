@@ -13,7 +13,6 @@ repositories {
     mavenCentral()
     maven { url = uri("https://dl.bintray.com/kotlin/kotlin-js-wrappers") }
     maven { url = uri("https://dl.bintray.com/kotlin/kotlinx") }
-    maven { url = uri("https://dl.bintray.com/kotlin/ktor") }
 }
 
 kotlin {
@@ -53,10 +52,6 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-server-netty:1.4.0")
-                implementation("io.ktor:ktor-html-builder:1.4.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2")
-
                 implementation("io.vertx:vertx-web:4.0.0")
                 implementation("io.vertx:vertx-web-client:4.0.0")
                 implementation("io.vertx:vertx-lang-kotlin:4.0.0")
@@ -98,11 +93,11 @@ kotlin {
 }
 
 application {
-    mainClassName = "ServerKt"
+    mainClassName = "MainKt"
 }
 
 tasks.getByName<KotlinWebpack>("jsBrowserProductionWebpack") {
-    outputFileName = "output.js"
+//    outputFileName = "output.js"
 }
 
 tasks.getByName<Jar>("jvmJar") {
@@ -114,4 +109,10 @@ tasks.getByName<Jar>("jvmJar") {
 tasks.getByName<JavaExec>("run") {
     dependsOn(tasks.getByName<Jar>("jvmJar"))
     classpath(tasks.getByName<Jar>("jvmJar"))
+}
+
+val buildJs by tasks.registering(Copy::class) {
+    dependsOn(tasks.getByName<Task>("jsBrowserDevelopmentWebpack"))
+    from("jvmMain/resources", "build/distributions")
+    into("output")
 }

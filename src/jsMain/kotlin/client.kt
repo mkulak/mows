@@ -70,7 +70,8 @@ private fun changePos(dxy: XY) {
 }
 
 private fun connect() {
-    socket = WebSocket("ws://localhost:8081")
+    val url = (if (window.location.protocol == "https:") "wss://" else "ws://") + window.location.host
+    socket = WebSocket(url)
     socket?.onmessage = {
 //        console.log("received ${it.data}")
         val data = it.data as String

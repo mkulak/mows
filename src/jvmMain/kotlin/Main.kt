@@ -31,9 +31,9 @@ suspend fun main() {
         .requestHandler(httpApi)
         .webSocketHandler(wsApi)
         .exceptionHandler { it.printStackTrace() }
-        .listen(8081)
+        .listen(8080)
         .await()
-    println("Started at :8081")
+    println("Started at :8080")
 }
 
 fun createObjectMapper(): ObjectMapper =
@@ -102,7 +102,7 @@ class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
 class HttpApi(vertx: Vertx) : Handler<HttpServerRequest> {
     val router = Router.router(vertx)
     init {
-        router.get("/*").handler(StaticHandler.create("build/distributions").setCachingEnabled(true).setMaxAgeSeconds(0))
+        router.get("/*").handler(StaticHandler.create("output").setCachingEnabled(true).setMaxAgeSeconds(0))
     }
     override fun handle(event: HttpServerRequest) {
         router.handle(event)
