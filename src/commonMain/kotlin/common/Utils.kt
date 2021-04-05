@@ -1,5 +1,6 @@
 package common
 
+import kotlin.math.round
 import kotlin.math.sqrt
 
 data class XY(val x: Double, val y: Double)
@@ -12,6 +13,7 @@ fun XY.normalize(): XY {
     val length = length()
     return if (length != 0.0) XY(x / length, y / length) else ZERO_XY
 }
+fun XY.round(): XY = XY(round(x), round(y))
 
 val ZERO_XY = XY(0.0, 0.0)
 
