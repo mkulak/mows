@@ -13,7 +13,7 @@ class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
     lateinit var gameService: GameService
 
     override fun handle(ws: ServerWebSocket) {
-        if (!ws.path().matches("/rooms/.*".toRegex()))  {
+        if (!ws.path().startsWith("/rooms/"))  {
             logger.warn("Request path doesn't match: ${ws.path()}")
         }
         ws.accept()
@@ -28,7 +28,7 @@ class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
             gameService.onLeave(playerId)
             clients.remove(playerId)
         }
-        val roomId = RoomId(ws.path().removeSuffix("/").substringAfterLast("/", "")).takeIf { it.value.isNotEmpty() }
+        val roomId = RoomId(ws.path().removePrefix("/rooms/")).takeIf { it.value.isNotEmpty() }
         logger.info("Joined $playerId on ${ws.path()}, roomId: $roomId")
         gameService.onJoin(playerId, roomId)
     }

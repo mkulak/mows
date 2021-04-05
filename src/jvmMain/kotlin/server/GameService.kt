@@ -17,8 +17,12 @@ class GameService(val wsApi: WsApi) {
         val pos = XY(nextDouble(MAP_WIDTH), nextDouble(MAP_HEIGHT))
         val actualRoomId = requestedRoomId ?: rooms.values.minByOrNull { it.playerIds.size }?.id ?: RoomId(nextId())
         players[playerId] = Player(playerId, actualRoomId, pos)
-        val room = rooms.getOrPut(actualRoomId) { Room(actualRoomId, HashSet()) }
+        val room = rooms.getOrPut(actualRoomId) {
+            logger.info("creating new room: $actualRoomId")
+            Room(actualRoomId, HashSet())
+        }
         room.playerIds += playerId
+        logger.info("$playerId entered $actualRoomId, size: ${room.playerIds.size}")
         wsApi.send(playerId, LoginMessage(playerId.value))
         room.playerIds.forEach {
             wsApi.send(it, UpdateMessage(playerId.value, pos))
