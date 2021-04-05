@@ -4,6 +4,7 @@ import common.ClientCommand
 import common.LoginMessage
 import common.MoveCommand
 import common.RemovePlayerMessage
+import common.RoomUpdateMessage
 import common.UpdateMessage
 import common.XY
 import mu.KLogging
@@ -23,12 +24,11 @@ class GameService(val wsApi: WsApi) {
         }
         room.playerIds += playerId
         logger.info("$playerId entered $actualRoomId, size: ${room.playerIds.size}")
+        val message = RoomUpdateMessage(room.id.value, room.playerIds.associate { it.value to players[it]!!.pos })
         wsApi.send(playerId, LoginMessage(playerId.value))
+        wsApi.send(playerId, message)
         room.playerIds.forEach {
             wsApi.send(it, UpdateMessage(playerId.value, pos))
-            if (it != playerId) {
-                wsApi.send(playerId, UpdateMessage(it.value, players[it]!!.pos))
-            }
         }
     }
 

@@ -1,13 +1,15 @@
 package client
 
 import common.ClientCommand
-import common.LoginMessage
-import common.RemovePlayerMessage
-import common.UpdateMessage
+import common.ServerMessage
 import kotlinx.browser.window
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.w3c.dom.WebSocket
 
 class NetworkModule(val gameLogic: GameLogic) {
+    val json = Json { ignoreUnknownKeys = true }
     lateinit var socket: WebSocket
 
     fun connect() {
@@ -24,28 +26,18 @@ class NetworkModule(val gameLogic: GameLogic) {
     }
 
     fun send(command: ClientCommand) {
-        val data = JSON.stringify(command)
+        val data = json.encodeToString(command)
         socket.send(data)
     }
 
     private fun receive(data: String) {
         println("receive: $data")
-        when (JSON.parse<dynamic>(data).type) {
-            "login" -> {
-                val msg = JSON.parse<LoginMessage>(data)
-                gameLogic.handle(msg)
-            }
-            "update" -> {
-                val msg = JSON.parse<UpdateMessage>(data)
-                gameLogic.handle(msg)
-            }
-            "remove" -> {
-                val msg = JSON.parse<RemovePlayerMessage>(data)
-                gameLogic.handle(msg)
-            }
-            else -> {
-                println("unknown message: $data")
-            }
+        val msg = try {
+            json.decodeFromString<ServerMessage>(data)
+        } catch (e: Exception) {
+            println("Unknown server message: $data")
+            return
         }
+        gameLogic.handle(msg)
     }
 }

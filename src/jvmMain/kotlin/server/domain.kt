@@ -29,4 +29,3 @@ data class Room(
     val id: RoomId,
     val playerIds: MutableSet<PlayerId>
 )
-

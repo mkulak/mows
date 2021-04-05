@@ -1,14 +1,15 @@
 package server
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import common.MoveCommand
+import common.ClientCommand
 import common.ServerMessage
 import io.vertx.core.Handler
 import io.vertx.core.http.ServerWebSocket
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import mu.KLogging
 
-class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
+class WsApi(val json: Json) : Handler<ServerWebSocket> {
     private val clients = mutableMapOf<PlayerId, ConnectedClient>()
     lateinit var gameService: GameService
 
@@ -35,19 +36,19 @@ class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
 
     private fun handleClientCommand(msg: String, playerId: PlayerId) {
 //        logger.info("Got $msg from $playerId")
-        val command = mapper.readValue<MoveCommand>(msg)
+        val command = json.decodeFromString<ClientCommand>(msg)
         gameService.handle(playerId, command)
     }
 
     fun send(playerIds: Set<PlayerId>, message: ServerMessage) {
-        val data = mapper.writeValueAsString(message)
+        val data = json.encodeToString(message)
         playerIds.forEach {
             clients[it]?.ws?.writeTextMessage(data)
         }
     }
 
     fun send(playerId: PlayerId, message: ServerMessage) {
-        clients[playerId]?.ws?.writeTextMessage(mapper.writeValueAsString(message))
+        clients[playerId]?.ws?.writeTextMessage(json.encodeToString(message))
     }
 
     companion object : KLogging()
