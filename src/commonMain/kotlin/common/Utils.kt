@@ -1,3 +1,5 @@
+package common
+
 import kotlin.math.sqrt
 
 data class XY(val x: Double, val y: Double)
