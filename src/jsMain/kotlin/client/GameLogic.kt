@@ -7,13 +7,17 @@ import common.RoomUpdateMessage
 import common.ServerMessage
 import common.UpdateMessage
 import common.XY
-import common.ZERO_XY
+import common.length
+import common.minus
+import common.normalize
 import common.plus
 import common.round
+import common.times
 
 class GameLogic {
     lateinit var networkModule: NetworkModule
     val room = Room(RoomId(""), PlayerId(""), HashMap())
+    var elapsedSinceLastPosUpdate = 0.0
 
     fun handle(message: ServerMessage) {
         when (message) {
@@ -28,15 +32,42 @@ class GameLogic {
             }
             is UpdateMessage -> {
                 val playerId = PlayerId(message.id)
-                val player = room.players.getOrPut(playerId, { Player(playerId, ZERO_XY, ZERO_XY) })
-//                println("move $playerId to ${message.pos}, myId ${room.myId}, eq: ${playerId == room.myId}")
-                if (playerId != room.myId) {
-                    player.pos = message.pos
-                }
+                val player = room.players.getOrPut(playerId, { Player(playerId, message.pos, message.pos) })
+                player.serverPos = message.pos
             }
             is RemovePlayerMessage -> {
                 room.players.remove(PlayerId(message.id))
             }
+        }
+    }
+
+    fun update(dt: Double) {
+        room.players.values.forEach {
+            if (it.id == room.myId) {
+                updateServerPosition(it, dt)
+            } else {
+                updateLocalPosition(it, dt)
+            }
+        }
+    }
+
+    private fun updateServerPosition(me: Player, dt: Double) {
+        if (me.pos == me.serverPos) {
+            return
+        }
+        elapsedSinceLastPosUpdate += dt
+        if (elapsedSinceLastPosUpdate > POS_UPDATE_RATE) {
+            elapsedSinceLastPosUpdate = 0.0
+            println("sending my new position: ${me.pos}")
+            networkModule.send(MoveCommand(me.pos))
+        }
+    }
+
+    private fun updateLocalPosition(it: Player, dt: Double) {
+        val diff = it.serverPos - it.pos
+        val diffLen = diff.length()
+        if (diffLen > 1) {
+            it.pos += if (diffLen > dt) diff.normalize() * dt else diff
         }
     }
 
@@ -46,7 +77,6 @@ class GameLogic {
         if (me != null) {
             val newPos = (me.pos + dxy).round()
             me.pos = newPos
-            networkModule.send(MoveCommand(newPos))
         }
     }
 
@@ -54,3 +84,5 @@ class GameLogic {
         room.clear()
     }
 }
+
+val POS_UPDATE_RATE = 500.0

@@ -32,6 +32,7 @@ private fun tick(timestamp: Double) {
     val dt = timestamp - (lastTime ?: timestamp)
     lastTime = timestamp
     inputModule.handle(dt)
+    gameLogic.update(dt)
     view.draw(gameLogic.room)
     window.requestAnimationFrame(::tick)
 }
