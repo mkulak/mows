@@ -66,7 +66,7 @@ class InputModule(val gameLogic: GameLogic) {
             val dxy = lastMousePos - myPos
             val length = dxy.length()
             if (length > 1) {
-                gameLogic.changePos(dxy.normalize() * dt.coerceAtMost(length))
+                gameLogic.changePos(dxy.normalize() * (dt * MOVE_SPEED).coerceAtMost(length))
             }
         }
     }
@@ -78,8 +78,8 @@ class InputModule(val gameLogic: GameLogic) {
         val gamepad = js("navigator").getGamepads()[gamepadIndex]
         val dxy = XY(gamepad.axes[0], gamepad.axes[1])
         if (dxy.length() > 0.5) {
-            println("gamepad dxy: $dxy")
-            gameLogic.changePos(dxy.normalize() * dt)
+//            println("gamepad dxy: $dxy")
+            gameLogic.changePos(dxy.normalize() * dt * MOVE_SPEED)
         }
         if (gamepad.buttons.iterator().asSequence().any { it.pressed }) {
             gamepad.vibrationActuator.playEffect(

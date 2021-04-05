@@ -31,7 +31,7 @@ class NetworkModule(val gameLogic: GameLogic) {
     }
 
     private fun receive(data: String) {
-        println("receive: $data")
+//        println("receive: $data")
         val msg = try {
             json.decodeFromString<ServerMessage>(data)
         } catch (e: Exception) {

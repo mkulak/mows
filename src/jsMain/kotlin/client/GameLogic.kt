@@ -67,7 +67,7 @@ class GameLogic {
         val diff = it.serverPos - it.pos
         val diffLen = diff.length()
         if (diffLen > 1) {
-            it.pos += if (diffLen > dt) diff.normalize() * dt else diff
+            it.pos += if (diffLen > dt) diff.normalize() * dt * MOVE_SPEED * OTHER_SPEED_MUL else diff
         }
     }
 
@@ -85,4 +85,6 @@ class GameLogic {
     }
 }
 
-val POS_UPDATE_RATE = 500.0
+val POS_UPDATE_RATE = 250.0
+val MOVE_SPEED = 0.5
+val OTHER_SPEED_MUL = 0.8
