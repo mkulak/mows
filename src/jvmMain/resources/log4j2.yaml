@@ -1,0 +1,19 @@
+Configuration:
+  thresholdFilter:
+    level: debug
+  appenders:
+    Console:
+      name: STDOUT
+      PatternLayout:
+        Pattern: "%d{HH:mm:ss.SSS} %-5level %logger{16} %X{X-Correlation-ID} - %m%n"
+
+  Loggers:
+    logger:
+      - name: org.apache
+        level: info
+      - name: com.amazonaws
+        level: info
+    Root:
+      level: info
+      AppenderRef:
+        ref: STDOUT

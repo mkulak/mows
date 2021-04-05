@@ -1,6 +1,7 @@
 package server
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonCreator.Mode.DELEGATING
 import com.fasterxml.jackson.annotation.JsonValue
 import common.XY
 import io.vertx.core.http.ServerWebSocket
@@ -10,12 +11,22 @@ data class ConnectedClient(
     val ws: ServerWebSocket
 )
 
-data class PlayerId @JsonCreator(mode = JsonCreator.Mode.DELEGATING) constructor(@JsonValue val value: String) {
+data class PlayerId @JsonCreator(mode = DELEGATING) constructor(@JsonValue val value: String) {
+    override fun toString() = value
+}
+
+data class RoomId @JsonCreator(mode = DELEGATING) constructor(@JsonValue val value: String) {
     override fun toString() = value
 }
 
 data class Player(
     val id: PlayerId,
+    val roomId: RoomId,
     val pos: XY
+)
+
+data class Room(
+    val id: RoomId,
+    val playerIds: MutableSet<PlayerId>
 )
 

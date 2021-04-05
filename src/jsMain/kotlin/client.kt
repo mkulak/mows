@@ -41,6 +41,11 @@ fun main() {
             it.preventDefault()
         } 
     }
+    window.onhashchange = {
+        players.clear()
+        myId = ""
+        connect()
+    }
     window.onmousedown = {
         isMouseDown = true
         null
@@ -108,7 +113,9 @@ private fun changePos(dxy: XY) {
 }
 
 private fun connect() {
-    val url = (if (window.location.protocol == "https:") "wss://" else "ws://") + window.location.host
+    socket?.close()
+    val protocol = if (window.location.protocol == "https:") "wss" else "ws"
+    val url = "$protocol://${window.location.host}/rooms/${window.location.hash.drop(1)}"
     socket = WebSocket(url)
     socket?.onmessage = {
 //        console.log("received ${it.data}")

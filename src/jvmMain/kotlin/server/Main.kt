@@ -10,6 +10,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.vertx.core.Vertx
 import io.vertx.kotlin.coroutines.await
+import mu.KotlinLogging
+
+val logger = KotlinLogging.logger {}
 
 suspend fun main() {
     val vertx = Vertx.vertx()
@@ -18,6 +21,7 @@ suspend fun main() {
     val gameService = GameService(wsApi)
     wsApi.gameService = gameService
     val httpApi = HttpApi(vertx)
+    logger.info("Starting server")
     vertx.createHttpServer()
         .requestHandler(httpApi)
         .webSocketHandler(wsApi)

@@ -13,11 +13,13 @@ class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
     lateinit var gameService: GameService
 
     override fun handle(ws: ServerWebSocket) {
+        if (!ws.path().matches("/rooms/.*".toRegex()))  {
+            logger.warn("Request path doesn't match: ${ws.path()}")
+        }
         ws.accept()
         val playerId = PlayerId(nextId())
         val client = ConnectedClient(playerId, ws)
         clients[playerId] = client
-        logger.info("Joined $playerId on ${ws.path()}")
         ws.textMessageHandler { msg ->
             handleClientCommand(msg, playerId)
         }
@@ -26,7 +28,9 @@ class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
             gameService.onLeave(playerId)
             clients.remove(playerId)
         }
-        gameService.onJoin(playerId)
+        val roomId = RoomId(ws.path().removeSuffix("/").substringAfterLast("/", "")).takeIf { it.value.isNotEmpty() }
+        logger.info("Joined $playerId on ${ws.path()}, roomId: $roomId")
+        gameService.onJoin(playerId, roomId)
     }
 
     private fun handleClientCommand(msg: String, playerId: PlayerId) {
@@ -35,10 +39,10 @@ class WsApi(val mapper: ObjectMapper) : Handler<ServerWebSocket> {
         gameService.handle(playerId, command)
     }
 
-    fun broadcast(message: ServerMessage) {
+    fun send(playerIds: Set<PlayerId>, message: ServerMessage) {
         val data = mapper.writeValueAsString(message)
-        clients.values.forEach {
-            it.ws.writeTextMessage(data)
+        playerIds.forEach {
+            clients[it]?.ws?.writeTextMessage(data)
         }
     }
 
