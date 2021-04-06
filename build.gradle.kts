@@ -1,9 +1,11 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 
 plugins {
     kotlin("multiplatform") version "1.4.32"
     kotlin("plugin.serialization") version "1.4.32"
     application
+    id("com.github.johnrengelman.shadow") version "4.0.4"
 }
 
 group = "me.xap4o"
@@ -120,4 +122,10 @@ val buildJs by tasks.registering(Copy::class) {
     dependsOn(tasks.getByName<Task>("jsBrowserDevelopmentWebpack"))
     from("src/jvmMain/resources", "build/distributions")
     into("output")
+}
+
+tasks.getByName<ShadowJar>("shadowJar") {
+    archiveBaseName.set("wonder")
+    archiveClassifier.set("")
+    archiveVersion.set("")
 }

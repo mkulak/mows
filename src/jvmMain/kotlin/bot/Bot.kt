@@ -8,6 +8,7 @@ import common.plus
 import common.times
 import io.vertx.core.Vertx
 import io.vertx.core.http.WebSocket
+import io.vertx.core.http.WebSocketConnectOptions
 import io.vertx.kotlin.coroutines.awaitResult
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -32,7 +33,12 @@ suspend fun main() {
 
 private suspend fun startBot(vertx: Vertx, bot: Int, room: Int) {
     val ws = awaitResult<WebSocket> { handler ->
-        vertx.createHttpClient().webSocket(8080, "localhost", "/rooms/$room") {
+        val options = WebSocketConnectOptions()
+            .setSsl(true)
+            .setHost("wonder.kvarto.net")
+            .setPort(443)
+            .setURI("/rooms/$room")
+        vertx.createHttpClient().webSocket(options) {
 //            if (it.succeeded()) {
 //                it.result().textMessageHandler {
 //                    println(it)

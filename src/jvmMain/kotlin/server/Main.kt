@@ -10,6 +10,7 @@ val logger = KotlinLogging.logger {}
 val json = Json { ignoreUnknownKeys = true }
 
 suspend fun main() {
+    val port = System.getenv("WONDER_PORT")?.toInt() ?: 8080
     val vertx = Vertx.vertx()
     val wsApi = WsApi(json)
     val gameService = GameService(wsApi)
@@ -20,7 +21,7 @@ suspend fun main() {
         .requestHandler(httpApi)
         .webSocketHandler(wsApi)
         .exceptionHandler { it.printStackTrace() }
-        .listen(8080)
+        .listen(port)
         .await()
-    println("Started at :8080")
+    println("Started at :$port")
 }
