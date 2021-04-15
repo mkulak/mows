@@ -14,12 +14,16 @@ sealed class ServerMessage
 data class LoginMessage(val id: String) : ServerMessage()
 
 @Serializable
-@SerialName("room_update")
-data class RoomUpdateMessage(val roomId: String, val players: Map<String, XY>) : ServerMessage()
+@SerialName("full_update")
+data class FullRoomUpdateMessage(val roomId: String, val players: Map<String, XY>) : ServerMessage()
 
 @Serializable
 @SerialName("update")
-data class UpdateMessage(val id: String, val pos: XY) : ServerMessage()
+data class UpdateMessage(val ids: List<String>, val xs: List<Double>, val ys: List<Double>) : ServerMessage()
+
+@Serializable
+@SerialName("add")
+data class AddPlayerMessage(val id: String, val pos: XY) : ServerMessage()
 
 @Serializable
 @SerialName("remove")

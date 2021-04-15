@@ -1,9 +1,10 @@
 package client
 
+import common.AddPlayerMessage
+import common.FullRoomUpdateMessage
 import common.LoginMessage
 import common.MoveCommand
 import common.RemovePlayerMessage
-import common.RoomUpdateMessage
 import common.ServerMessage
 import common.UpdateMessage
 import common.XY
@@ -22,7 +23,7 @@ class GameLogic {
     fun handle(message: ServerMessage) {
         when (message) {
             is LoginMessage -> room.myId = PlayerId(message.id)
-            is RoomUpdateMessage -> {
+            is FullRoomUpdateMessage -> {
                 room.id = RoomId(message.roomId)
                 room.players.clear()
                 message.players.forEach { (id, pos) ->
@@ -31,9 +32,15 @@ class GameLogic {
                 }
             }
             is UpdateMessage -> {
+                message.ids.forEachIndexed { index, id ->
+                    val playerId = PlayerId(id)
+                    val player = room.players[playerId]!!//.getOrPut(playerId, { Player(playerId, message.pos, message.pos) })
+                    player.serverPos = XY(message.xs[index], message.ys[index])
+                }
+            }
+            is AddPlayerMessage -> {
                 val playerId = PlayerId(message.id)
-                val player = room.players.getOrPut(playerId, { Player(playerId, message.pos, message.pos) })
-                player.serverPos = message.pos
+                room.players.put(playerId, Player(playerId, message.pos, message.pos))
             }
             is RemovePlayerMessage -> {
                 room.players.remove(PlayerId(message.id))

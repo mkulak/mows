@@ -27,5 +27,7 @@ data class Player(
 
 data class Room(
     val id: RoomId,
-    val playerIds: MutableSet<PlayerId>
+    val playerIds: MutableSet<PlayerId>,
+    val playersWithUpdates: MutableSet<PlayerId>,
+    var lastUpdateSentAt: Long
 )

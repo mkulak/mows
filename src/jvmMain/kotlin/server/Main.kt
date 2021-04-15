@@ -2,6 +2,8 @@ package server
 
 import io.vertx.core.Vertx
 import io.vertx.kotlin.coroutines.await
+import io.vertx.kotlin.coroutines.dispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
@@ -16,6 +18,9 @@ suspend fun main() {
     val gameService = GameService(wsApi)
     wsApi.gameService = gameService
     val httpApi = HttpApi(vertx)
+    val scope = CoroutineScope(vertx.dispatcher())
+    val ticker = RoomTicker(scope, gameService)
+    ticker.start()
     logger.info("Starting server")
     vertx.createHttpServer()
         .requestHandler(httpApi)

@@ -124,6 +124,12 @@ val buildJs by tasks.registering(Copy::class) {
     into("output")
 }
 
+val buildProdJs by tasks.registering(Copy::class) {
+    dependsOn(tasks.getByName<Task>("jsBrowserProductionWebpack"))
+    from("src/jvmMain/resources", "build/distributions")
+    into("output")
+}
+
 tasks.getByName<ShadowJar>("shadowJar") {
     archiveBaseName.set("wonder")
     archiveClassifier.set("")
