@@ -23,29 +23,27 @@ class GameLogic {
     fun handle(message: ServerMessage) {
         when (message) {
             is LoginMessage -> room.myId = PlayerId(message.id)
+            is AddPlayerMessage -> addPlayer(message.id, message.pos)
+            is RemovePlayerMessage -> room.players.remove(PlayerId(message.id))
             is FullRoomUpdateMessage -> {
                 room.id = RoomId(message.roomId)
                 room.players.clear()
                 message.players.forEach { (id, pos) ->
-                    val playerId = PlayerId(id)
-                    room.players[playerId] = Player(playerId, pos, pos)
+                    addPlayer(id, pos)
                 }
             }
             is UpdateMessage -> {
                 message.ids.forEachIndexed { index, id ->
-                    val playerId = PlayerId(id)
-                    val player = room.players[playerId]!!//.getOrPut(playerId, { Player(playerId, message.pos, message.pos) })
+                    val player = room.players[PlayerId(id)]!!
                     player.serverPos = XY(message.xs[index], message.ys[index])
                 }
             }
-            is AddPlayerMessage -> {
-                val playerId = PlayerId(message.id)
-                room.players.put(playerId, Player(playerId, message.pos, message.pos))
-            }
-            is RemovePlayerMessage -> {
-                room.players.remove(PlayerId(message.id))
-            }
         }
+    }
+
+    private fun addPlayer(id: String, pos: XY) {
+        val playerId = PlayerId(id)
+        room.players[playerId] = Player(playerId, pos, pos)
     }
 
     fun update(dt: Double) {
