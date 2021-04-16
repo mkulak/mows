@@ -67,6 +67,8 @@ kotlin {
                 implementation("com.fasterxml.jackson.module:jackson-modules-java8:2.11.2")
                 implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.2")
                 implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.2")
+                implementation("io.micrometer:micrometer-core:1.6.6")
+                implementation("io.vertx:vertx-micrometer-metrics:4.0.3")
 
                 implementation("org.apache.logging.log4j:log4j-core:2.13.3")
                 implementation("org.apache.logging.log4j:log4j-api:2.13.3")
