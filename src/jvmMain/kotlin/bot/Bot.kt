@@ -333,4 +333,19 @@ public inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
 //0.99 percentile - 26835.156992 ms
 //0.999 percentile - 34351.34976 ms
 
-//uuid = 16 byte = 128 bit = 22 x 6 bit char = 22 byte
+//bigger ids
+//bots: 300
+//rooms: 1
+//duration: 60s
+//sent packets: 83124 (1385 packets/s)
+//received packets: 74937 (1248 packets/s)
+//total bytes sent: 3559982 (42 bytes/packet)
+//total bytes received: 155673874 (2077 bytes/packet)
+//vertx bytes read: 1.55049984E8
+//latency measurements: 13327
+//pending latency measurements: 69766
+//0.5 percentile - 18236.833792 ms
+//0.95 percentile - 38637.928448 ms
+//0.99 percentile - 47227.86304 ms
+//0.999 percentile - 51522.830336 ms
+//CPU: 23% peak max
