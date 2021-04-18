@@ -30,8 +30,10 @@ import kotlinx.serialization.json.Json
 import server.MAP_HEIGHT
 import server.MAP_WIDTH
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import kotlin.random.Random
 import kotlin.random.Random.Default.nextDouble
 import kotlin.random.Random.Default.nextLong
+import kotlin.random.asJavaRandom
 import kotlin.time.ExperimentalTime
 
 val json = Json { ignoreUnknownKeys = true }
@@ -57,17 +59,19 @@ val vertx = Vertx.vertx(VertxOptions().apply {
 @ExperimentalTime
 suspend fun main() {
     val scope = CoroutineScope(vertx.dispatcher())
-    val botCount = 10
+    val botCount = 300
     val duration = 10
+    val rooms = 10
     repeat(botCount) { bot ->
-        val room = 1
+        val room = bot % rooms
         scope.launch { Bot(vertx, bot, true).start(room) }
     }
-    println("launched $botCount")
     delay(duration * 1000L)
     scope.coroutineContext[Job]?.cancelChildren()
     vertx.close()
-    println("duration: $duration s")
+    println("bots: $botCount")
+    println("rooms: $rooms")
+    println("duration: ${duration}s")
     println("sent packets: $sentCount (${sentCount / duration} packets/s)")
     println("received packets: $receivedCount (${receivedCount / duration} packets/s)")
     println("total bytes sent: $sentSize (${sentSize / sentCount} bytes/packet)")
@@ -88,7 +92,7 @@ class Bot(val vertx: Vertx, val bot: Int, val walking: Boolean) {
 
     suspend fun start(room: Int) {
         val ws = connect(room, vertx)
-        println("connected bot#$bot room#$room")
+//        println("connected bot#$bot room#$room")
         delay(nextLong(1000))
         while (walking) {
             advancePos()
@@ -103,9 +107,10 @@ class Bot(val vertx: Vertx, val bot: Int, val walking: Boolean) {
             val options = WebSocketConnectOptions()
                 .setSsl(false)
 //            .setHost("wonder.kvarto.net")
-//            .setHost("ec2-18-156-174-230.eu-central-1.compute.amazonaws.com")
-                .setHost("localhost")
-                .setPort(8080)
+                .setHost("ec2-18-156-174-230.eu-central-1.compute.amazonaws.com")
+//                .setHost("localhost")
+//                .setPort(8080)
+                .setPort(7000)
                 .setURI("/rooms/$room")
             vertx.createHttpClient().webSocket(options) {
                 it.result()?.textMessageHandler(::handleMessage)
@@ -158,3 +163,59 @@ class Bot(val vertx: Vertx, val bot: Int, val walking: Boolean) {
 }
 
 // bots: 90, top cpu: 62%, top mem: 380 Mb, traffic out: 470 Kib/s, traffic in: 145 Kib/s
+//bots: 10
+//rooms: 1
+//duration: 10s
+//sent packets: 436 (43 packets/s)
+//received packets: 975 (97 packets/s)
+//total bytes sent: 27140 (62 bytes/packet)
+//total bytes received: 147326 (151 bytes/packet)
+//vertx bytes read: 122880.0
+//latency measurements: 94
+//0.5 percentile - 82.837504 ms
+//0.95 percentile - 128.974848 ms
+//0.99 percentile - 133.169152 ms
+//0.999 percentile - 133.169152 ms
+
+
+//bots: 100
+//rooms: 1
+//duration: 10 s
+//sent packets: 3369 (336 packets/s)
+//received packets: 12236 (1223 packets/s)
+//total bytes sent: 209118 (62 bytes/packet)
+//total bytes received: 7419488 (606 bytes/packet)
+//vertx bytes read: 7208960.0
+//latency measurements: 732
+//0.5 percentile - 103.809024 ms
+//0.95 percentile - 149.946368 ms
+//0.99 percentile - 258.998272 ms
+//0.999 percentile - 418.381824 ms
+
+//bots: 300
+//rooms: 1
+//duration: 10s
+//sent packets: 3658 (365 packets/s)
+//received packets: 15441 (1544 packets/s)
+//total bytes sent: 228041 (62 bytes/packet)
+//total bytes received: 9147292 (592 bytes/packet)
+//vertx bytes read: 8904704.0
+//latency measurements: 742
+//0.5 percentile - 116.391936 ms
+//0.95 percentile - 519.04512 ms
+//0.99 percentile - 837.812224 ms
+//0.999 percentile - 1039.138816 ms
+
+//bots: 300
+//rooms: 10
+//duration: 10s
+//sent packets: 3680 (368 packets/s)
+//received packets: 8255 (825 packets/s)
+//total bytes sent: 229878 (62 bytes/packet)
+//total bytes received: 1190307 (144 bytes/packet)
+//vertx bytes read: 978944.0
+//latency measurements: 761
+//0.5 percentile - 82.837504 ms
+//0.95 percentile - 133.169152 ms
+//0.99 percentile - 158.334976 ms
+//0.999 percentile - 175.112192 ms
