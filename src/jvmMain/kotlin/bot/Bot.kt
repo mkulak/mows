@@ -60,7 +60,7 @@ val vertx = Vertx.vertx(VertxOptions().apply {
 @ExperimentalTime
 suspend fun main(args: Array<String>) {
     val scope = CoroutineScope(Dispatchers.Default)
-    val botCount = args.firstOrNull()?.toInt() ?: 10
+    val botCount = args.firstOrNull()?.toInt() ?: 300
     val duration = 60
     val rooms = 1
     val bots = List(botCount) { bot ->
@@ -75,9 +75,8 @@ suspend fun main(args: Array<String>) {
     println("started waiting")
     delay(duration * 1000L)
     scope.coroutineContext[Job]?.cancelChildren()
-    println("cancelling bots")
+    println("shutting down")
     tasks.forEach { it.join() }
-    println("bots cancelled")
     vertx.close()
     printResults(bots, rooms, duration)
 }
@@ -257,3 +256,81 @@ public inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
     }
     return sum
 }
+
+//bots: 10
+//rooms: 1
+//duration: 60s
+//sent packets: 2918 (48 packets/s)
+//received packets: 5985 (99 packets/s)
+//total bytes sent: 124985 (42 bytes/packet)
+//total bytes received: 905011 (151 bytes/packet)
+//vertx bytes read: 901120.0
+//latency measurements: 2917
+//pending latency measurements: 1
+//0.5 percentile - 78.6432 ms
+//0.95 percentile - 124.780544 ms
+//0.99 percentile - 133.169152 ms
+//0.999 percentile - 158.334976 ms
+
+//bots: 10
+//rooms: 1
+//duration: 60s
+//sent packets: 2897 (48 packets/s)
+//received packets: 5485 (91 packets/s)
+//total bytes sent: 124061 (42 bytes/packet)
+//total bytes received: 872689 (159 bytes/packet)
+//vertx bytes read: 860160.0
+//latency measurements: 2887
+//pending latency measurements: 10
+//0.5 percentile - 78.6432 ms
+//0.95 percentile - 128.974848 ms
+//0.99 percentile - 242.221056 ms
+//0.999 percentile - 300.941312 ms
+
+
+//bots: 300
+//rooms: 10
+//duration: 60s
+//sent packets: 84910 (1415 packets/s)
+//received packets: 163133 (2718 packets/s)
+//total bytes sent: 3636489 (42 bytes/packet)
+//total bytes received: 64094823 (392 bytes/packet)
+//vertx bytes read: 6.3471616E7
+//latency measurements: 83986
+//pending latency measurements: 924
+//0.5 percentile - 91.226112 ms
+//0.95 percentile - 158.334976 ms
+//0.99 percentile - 191.889408 ms
+//0.999 percentile - 225.44384 ms
+
+//bots: 300
+//rooms: 10
+//duration: 60s
+//sent packets: 84335 (1405 packets/s)
+//received packets: 153935 (2565 packets/s)
+//total bytes sent: 3612358 (42 bytes/packet)
+//total bytes received: 63053028 (409 bytes/packet)
+//vertx bytes read: 6.2377984E7
+//latency measurements: 82961
+//pending latency measurements: 1374
+//0.5 percentile - 108.003328 ms
+//0.95 percentile - 569.376768 ms
+//0.99 percentile - 1945.10848 ms
+//0.999 percentile - 3354.394624 ms
+
+//bots: 300
+//rooms: 1
+//duration: 60s
+//sent packets: 83909 (1398 packets/s)
+//received packets: 144892 (2414 packets/s)
+//total bytes sent: 3593139 (42 bytes/packet)
+//total bytes received: 350070652 (2416 bytes/packet)
+//vertx bytes read: 3.49462528E8
+//latency measurements: 49868
+//pending latency measurements: 34028
+//0.5 percentile - 5628.755968 ms
+//0.95 percentile - 20392.706048 ms
+//0.99 percentile - 26835.156992 ms
+//0.999 percentile - 34351.34976 ms
+
+//uuid = 16 byte = 128 bit = 22 x 6 bit char = 22 byte
