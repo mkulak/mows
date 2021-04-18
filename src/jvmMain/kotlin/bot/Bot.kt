@@ -20,9 +20,11 @@ import io.vertx.kotlin.coroutines.awaitResult
 import io.vertx.kotlin.coroutines.dispatcher
 import io.vertx.micrometer.MicrometerMetricsOptions
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -30,19 +32,18 @@ import kotlinx.serialization.json.Json
 import server.MAP_HEIGHT
 import server.MAP_WIDTH
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import kotlin.random.Random
+import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextDouble
 import kotlin.random.Random.Default.nextLong
-import kotlin.random.asJavaRandom
 import kotlin.time.ExperimentalTime
 
 val json = Json { ignoreUnknownKeys = true }
 val speed = 100.0
-var sentCount = 0
-var sentSize = 0L
-var receivedCount = 0
-var receivedSize = 0L
-var latencyMeasured = 0
+//var sentCount = 0
+//var sentSize = 0L
+//var receivedCount = 0
+//var receivedSize = 0L
+//var latencyMeasured = 0
 val registry = SimpleMeterRegistry()
 val timer = Timer.builder("my-latency")
     .description("net latency")
@@ -57,19 +58,38 @@ val vertx = Vertx.vertx(VertxOptions().apply {
 })
 
 @ExperimentalTime
-suspend fun main() {
-    val scope = CoroutineScope(vertx.dispatcher())
-    val botCount = 300
-    val duration = 10
-    val rooms = 10
-    repeat(botCount) { bot ->
+suspend fun main(args: Array<String>) {
+    val scope = CoroutineScope(Dispatchers.Default)
+    val botCount = args.firstOrNull()?.toInt() ?: 10
+    val duration = 60
+    val rooms = 1
+    val bots = List(botCount) { bot ->
         val room = bot % rooms
-        scope.launch { Bot(vertx, bot, true).start(room) }
+        Bot(vertx, bot, room, true)
     }
+    val tasks = bots.map {
+        scope.launch {
+            it.start()
+        }
+    }
+    println("started waiting")
     delay(duration * 1000L)
     scope.coroutineContext[Job]?.cancelChildren()
+    println("cancelling bots")
+    tasks.forEach { it.join() }
+    println("bots cancelled")
     vertx.close()
-    println("bots: $botCount")
+    printResults(bots, rooms, duration)
+}
+
+private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
+    val sentCount = bots.sumBy { it.sentCount }
+    val sentSize = bots.sumByLong { it.sentSize }
+    val receivedCount = bots.sumBy { it.receivedCount }
+    val receivedSize = bots.sumByLong { it.receivedSize }
+    val latencyMeasured = bots.sumBy { it.latencyMeasured }
+    val pendingLatency = bots.sumBy { it.pos2time.size }
+    println("bots: ${bots.size}")
     println("rooms: $rooms")
     println("duration: ${duration}s")
     println("sent packets: $sentCount (${sentCount / duration} packets/s)")
@@ -78,28 +98,37 @@ suspend fun main() {
     println("total bytes received: $receivedSize (${receivedSize / receivedCount} bytes/packet)")
     println("vertx bytes read: ${registry.counter("vertx.http.client.bytes.read").count()}")
     println("latency measurements: $latencyMeasured")
+    println("pending latency measurements: $pendingLatency")
     timer.takeSnapshot().percentileValues().forEach {
         println("${it.percentile()} percentile - ${it.value().toLong() / 1e6} ms")
     }
-//    println(MetricsService.create(vertx).getMetricsSnapshot(""))
 }
 
-class Bot(val vertx: Vertx, val bot: Int, val walking: Boolean) {
+class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     var myId = ""
     val pos2time = HashMap<XY, Long>()
     var pos = randomPoint()
     var target = randomPoint()
 
-    suspend fun start(room: Int) {
+    var sentCount = 0
+    var sentSize = 0L
+    var receivedCount = 0
+    var receivedSize = 0L
+    var latencyMeasured = 0
+
+    suspend fun start() {
         val ws = connect(room, vertx)
 //        println("connected bot#$bot room#$room")
         delay(nextLong(1000))
-        while (walking) {
-            advancePos()
-            sendPos(ws, pos)
-            delay(200)
+        while (coroutineContext.isActive) {
+            if (walking) {
+                advancePos()
+                sendPos(ws, pos)
+                delay(200)
+            } else {
+                delay(1000)
+            }
         }
-        delay(Long.MAX_VALUE)
     }
 
     private suspend fun connect(room: Int, vertx: Vertx): WebSocket =
@@ -154,7 +183,7 @@ class Bot(val vertx: Vertx, val bot: Int, val walking: Boolean) {
         val diff = target - pos
         val diffLen = diff.length()
         if (diffLen > 1) {
-            pos += diff.normalize() * speed.coerceAtMost(diffLen)
+            pos = (pos + (diff.normalize() * speed.coerceAtMost(diffLen))).round()
         } else {
             target = randomPoint()
             advancePos()
@@ -219,3 +248,12 @@ class Bot(val vertx: Vertx, val bot: Int, val walking: Boolean) {
 //0.95 percentile - 133.169152 ms
 //0.99 percentile - 158.334976 ms
 //0.999 percentile - 175.112192 ms
+
+
+public inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
+    var sum: Long = 0
+    for (element in this) {
+        sum += selector(element)
+    }
+    return sum
+}

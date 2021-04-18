@@ -1,12 +1,14 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 
+
 plugins {
     kotlin("multiplatform") version "1.4.32"
     kotlin("plugin.serialization") version "1.4.32"
     application
     id("com.github.johnrengelman.shadow") version "4.0.4"
 }
+
 
 group = "me.xap4o"
 version = "1.0"
@@ -21,7 +23,7 @@ repositories {
 kotlin {
     jvm {
         compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
+            kotlinOptions.jvmTarget = "11"
         }
         testRuns["test"].executionTask.configure {
             useJUnit()
@@ -69,7 +71,6 @@ kotlin {
                 implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.2")
                 implementation("io.micrometer:micrometer-core:1.6.6")
                 implementation("io.vertx:vertx-micrometer-metrics:4.0.3")
-
                 implementation("org.apache.logging.log4j:log4j-core:2.13.3")
                 implementation("org.apache.logging.log4j:log4j-api:2.13.3")
                 implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.13.3")
