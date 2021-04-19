@@ -17,7 +17,6 @@ import io.vertx.core.VertxOptions
 import io.vertx.core.http.WebSocket
 import io.vertx.core.http.WebSocketConnectOptions
 import io.vertx.kotlin.coroutines.awaitResult
-import io.vertx.kotlin.coroutines.dispatcher
 import io.vertx.micrometer.MicrometerMetricsOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,13 +55,21 @@ val vertx = Vertx.vertx(VertxOptions().apply {
         isEnabled = true
     }
 })
+val hostAndPort = System.getenv("TARGET_URL") ?: "ec2-18-156-174-230.eu-central-1.compute.amazonaws.com:7000"
 
 @ExperimentalTime
 suspend fun main(args: Array<String>) {
     val scope = CoroutineScope(Dispatchers.Default)
-    val botCount = args.firstOrNull()?.toInt() ?: 300
-    val duration = 60
-    val rooms = 1
+    if (args.size != 3) {
+        println("required args: bots-count rooms-count duration-in-seconds")
+        System.exit(0)
+    }
+    val botCount = args[0].toInt()
+    val rooms = args[1].toInt()
+    val duration = args[2].toInt()
+    println("bots: $botCount")
+    println("rooms: $rooms")
+    println("duration: ${duration}s")
     val bots = List(botCount) { bot ->
         val room = bot % rooms
         Bot(vertx, bot, room, true)
@@ -116,7 +123,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     var latencyMeasured = 0
 
     suspend fun start() {
-        val ws = connect(room, vertx)
+        val ws = connect()
 //        println("connected bot#$bot room#$room")
         delay(nextLong(1000))
         while (coroutineContext.isActive) {
@@ -130,15 +137,16 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         }
     }
 
-    private suspend fun connect(room: Int, vertx: Vertx): WebSocket =
+    private suspend fun connect(): WebSocket =
         awaitResult { handler ->
+            val (host, port) = hostAndPort.split(":")
             val options = WebSocketConnectOptions()
                 .setSsl(false)
 //            .setHost("wonder.kvarto.net")
-                .setHost("ec2-18-156-174-230.eu-central-1.compute.amazonaws.com")
+                .setHost(host)
 //                .setHost("localhost")
 //                .setPort(8080)
-                .setPort(7000)
+                .setPort(port.toInt())
                 .setURI("/rooms/$room")
             vertx.createHttpClient().webSocket(options) {
                 it.result()?.textMessageHandler(::handleMessage)
