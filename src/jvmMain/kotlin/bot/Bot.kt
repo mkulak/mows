@@ -38,11 +38,6 @@ import kotlin.time.ExperimentalTime
 
 val json = Json { ignoreUnknownKeys = true }
 val speed = 100.0
-//var sentCount = 0
-//var sentSize = 0L
-//var receivedCount = 0
-//var receivedSize = 0L
-//var latencyMeasured = 0
 val registry = SimpleMeterRegistry()
 val timer = Timer.builder("my-latency")
     .description("net latency")
@@ -54,7 +49,9 @@ val vertx = Vertx.vertx(VertxOptions().apply {
         micrometerRegistry = registry
         isEnabled = true
     }
-})
+}).exceptionHandler {
+    println("Uncaught exception: $it")
+}
 val hostAndPort = System.getenv("TARGET_URL") ?: "ec2-18-156-174-230.eu-central-1.compute.amazonaws.com:7000"
 
 @ExperimentalTime
@@ -70,6 +67,7 @@ suspend fun main(args: Array<String>) {
     println("bots: $botCount")
     println("rooms: $rooms")
     println("duration: ${duration}s")
+    println("target: $hostAndPort")
     val bots = List(botCount) { bot ->
         val room = bot % rooms
         Bot(vertx, bot, room, true)

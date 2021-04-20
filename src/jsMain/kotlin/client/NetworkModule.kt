@@ -14,7 +14,7 @@ class NetworkModule(val gameLogic: GameLogic) {
 
     fun connect() {
         val protocol = if (window.location.protocol == "https:") "wss" else "ws"
-        val url = "$protocol://${window.location.host}/rooms/${window.location.hash.drop(1)}"
+        val url = "$protocol://${window.location.host.replace("3000", "7000")}/rooms/${window.location.hash.drop(1)}"
         socket = WebSocket(url)
         socket.onmessage = {
             receive(it.data as String)

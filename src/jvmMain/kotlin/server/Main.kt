@@ -13,7 +13,9 @@ val json = Json { ignoreUnknownKeys = true }
 
 suspend fun main() {
     val port = System.getenv("WONDER_PORT")?.toInt() ?: 8080
-    val vertx = Vertx.vertx()
+    val vertx = Vertx.vertx().exceptionHandler {
+        logger.info("Uncaught exception: $it")
+    }
     val wsApi = WsApi(json)
     val gameService = GameService(wsApi)
     wsApi.gameService = gameService
