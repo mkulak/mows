@@ -68,9 +68,9 @@ class GameService(val wsApi: WsApi) {
     fun tick()  {
         for (room in rooms.values) {
             val now = System.currentTimeMillis()
-            if (room.lastUpdateSentAt + UPDATE_SEND_INTERVAL > now) {
-                continue
-            }
+//            if (room.lastUpdateSentAt + UPDATE_SEND_INTERVAL > now) {
+//                continue
+//            }
             if (room.playersWithUpdates.isNotEmpty()) {
                 val ids = ArrayList<String>()
                 val xs = ArrayList<Double>()
