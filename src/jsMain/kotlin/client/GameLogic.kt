@@ -8,6 +8,7 @@ import common.RemovePlayerMessage
 import common.ServerMessage
 import common.UpdateMessage
 import common.XY
+import common.ZERO_XY
 import common.length
 import common.minus
 import common.normalize
@@ -69,11 +70,7 @@ class GameLogic {
     }
 
     private fun updateLocalPosition(it: Player, dt: Double) {
-        val diff = it.serverPos - it.pos
-        val diffLen = diff.length()
-        if (diffLen > 1) {
-            it.pos += if (diffLen > dt) diff.normalize() * dt * MOVE_SPEED * OTHER_SPEED_MUL else diff
-        }
+        it.pos += move(it.pos, it.serverPos, dt, false)
     }
 
     fun changePos(dxy: XY) {
@@ -90,6 +87,20 @@ class GameLogic {
     }
 }
 
-val POS_UPDATE_RATE = 250.0
-val MOVE_SPEED = 0.5
+fun move(from: XY, to: XY, dt: Double, me: Boolean): XY {
+    val diff = to - from
+    val diffLen = diff.length()
+    return when {
+        diffLen < 1 -> ZERO_XY
+        else -> {
+            val dir = diff.normalize()
+            val koef = if (me) 1.0 else OTHER_SPEED_MUL
+            val velocity = MOVE_SPEED * koef * (0.1 + (diffLen / 25.0).coerceAtMost(1.0) * 0.9)
+            dir * dt * velocity
+        }
+    }
+}
+
+val POS_UPDATE_RATE = 400.0
+val MOVE_SPEED = 0.4
 val OTHER_SPEED_MUL = 0.8
