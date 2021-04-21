@@ -30,6 +30,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import server.MAP_HEIGHT
 import server.MAP_WIDTH
+import server.logger
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextDouble
@@ -39,11 +40,9 @@ import kotlin.time.ExperimentalTime
 val json = Json { ignoreUnknownKeys = true }
 val speed = 100.0
 val registry = SimpleMeterRegistry()
-val timer = Timer.builder("my-latency")
-    .description("net latency")
-    .publishPercentiles(0.5, 0.95, 0.99, 0.999)
-    .publishPercentileHistogram()
-    .register(registry)
+val myPositionTimer = timer("my-position-latency")
+val roomUpdateTimer = timer("room-update-latency")
+
 val vertx = Vertx.vertx(VertxOptions().apply {
     metricsOptions = MicrometerMetricsOptions().apply {
         micrometerRegistry = registry
@@ -83,6 +82,10 @@ suspend fun main(args: Array<String>) {
     println("shutting down")
     tasks.forEach { it.join() }
     vertx.close()
+    val deadBotsCount = bots.count { it.quitAbruptly }
+    if (deadBotsCount != 0) {
+        println("WARNING: $deadBotsCount bots died. Results are affected")
+    }
     printResults(bots, rooms, duration)
 }
 
@@ -103,9 +106,8 @@ private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
     println("vertx bytes read: ${registry.counter("vertx.http.client.bytes.read").count()}")
     println("latency measurements: $latencyMeasured")
     println("pending latency measurements: $pendingLatency")
-    timer.takeSnapshot().percentileValues().forEach {
-        println("${it.percentile()} percentile - ${it.value().toLong() / 1e6} ms")
-    }
+    myPositionTimer.printSummery()
+    roomUpdateTimer.printSummery()
 }
 
 class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
@@ -120,19 +122,31 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     var receivedSize = 0L
     var latencyMeasured = 0
 
+    var lastRoomUpdateAt = 0L
+    var quitAbruptly = false
+
     suspend fun start() {
-        val ws = connect()
+        try {
+            val ws = connect()
 //        println("connected bot#$bot room#$room")
-        delay(nextLong(1000))
-        while (coroutineContext.isActive) {
-            if (walking) {
-                advancePos()
-                sendPos(ws, pos)
-                delay(200)
-            } else {
-                delay(1000)
+            delay(nextLong(1000))
+            while (coroutineContext.isActive && !quitAbruptly) {
+                if (walking) {
+                    advancePos()
+                    sendPos(ws, pos)
+                    delay(400)
+                } else {
+                    delay(1000)
+                }
             }
+        } catch (e: Exception) {
+            handleException(e)
         }
+    }
+
+    private fun handleException(e: Throwable) {
+        logger.error("Bot #${bot} from room ${room} got error: $e")
+        quitAbruptly = true
     }
 
     private suspend fun connect(): WebSocket =
@@ -147,7 +161,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
                 .setPort(port.toInt())
                 .setURI("/rooms/$room")
             vertx.createHttpClient().webSocket(options) {
-                it.result()?.textMessageHandler(::handleMessage)
+                it.result()?.textMessageHandler(::handleMessage)?.exceptionHandler(::handleException)
                 handler.handle(it)
             }
         }
@@ -156,6 +170,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         receivedCount++
         receivedSize += res.length
         val msg = json.decodeFromString<ServerMessage>(res)
+        val now = System.currentTimeMillis()
         when (msg) {
             is LoginMessage -> myId = msg.id
             is UpdateMessage -> {
@@ -164,10 +179,14 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
                     val pos = XY(msg.xs[index], msg.ys[index])
                     val sentAt = pos2time.remove(pos)
                     if (sentAt != null) {
-                        timer.record(System.currentTimeMillis() - sentAt, MILLISECONDS)
+                        myPositionTimer.record(now - sentAt, MILLISECONDS)
                         latencyMeasured++
                     }
                 }
+                if (lastRoomUpdateAt != 0L) {
+                    roomUpdateTimer.record(now - lastRoomUpdateAt, MILLISECONDS)
+                }
+                lastRoomUpdateAt = now
             }
         }
     }
@@ -196,66 +215,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     }
 }
 
-// bots: 90, top cpu: 62%, top mem: 380 Mb, traffic out: 470 Kib/s, traffic in: 145 Kib/s
-//bots: 10
-//rooms: 1
-//duration: 10s
-//sent packets: 436 (43 packets/s)
-//received packets: 975 (97 packets/s)
-//total bytes sent: 27140 (62 bytes/packet)
-//total bytes received: 147326 (151 bytes/packet)
-//vertx bytes read: 122880.0
-//latency measurements: 94
-//0.5 percentile - 82.837504 ms
-//0.95 percentile - 128.974848 ms
-//0.99 percentile - 133.169152 ms
-//0.999 percentile - 133.169152 ms
-
-
-//bots: 100
-//rooms: 1
-//duration: 10 s
-//sent packets: 3369 (336 packets/s)
-//received packets: 12236 (1223 packets/s)
-//total bytes sent: 209118 (62 bytes/packet)
-//total bytes received: 7419488 (606 bytes/packet)
-//vertx bytes read: 7208960.0
-//latency measurements: 732
-//0.5 percentile - 103.809024 ms
-//0.95 percentile - 149.946368 ms
-//0.99 percentile - 258.998272 ms
-//0.999 percentile - 418.381824 ms
-
-//bots: 300
-//rooms: 1
-//duration: 10s
-//sent packets: 3658 (365 packets/s)
-//received packets: 15441 (1544 packets/s)
-//total bytes sent: 228041 (62 bytes/packet)
-//total bytes received: 9147292 (592 bytes/packet)
-//vertx bytes read: 8904704.0
-//latency measurements: 742
-//0.5 percentile - 116.391936 ms
-//0.95 percentile - 519.04512 ms
-//0.99 percentile - 837.812224 ms
-//0.999 percentile - 1039.138816 ms
-
-//bots: 300
-//rooms: 10
-//duration: 10s
-//sent packets: 3680 (368 packets/s)
-//received packets: 8255 (825 packets/s)
-//total bytes sent: 229878 (62 bytes/packet)
-//total bytes received: 1190307 (144 bytes/packet)
-//vertx bytes read: 978944.0
-//latency measurements: 761
-//0.5 percentile - 82.837504 ms
-//0.95 percentile - 133.169152 ms
-//0.99 percentile - 158.334976 ms
-//0.999 percentile - 175.112192 ms
-
-
-public inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
+inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
     var sum: Long = 0
     for (element in this) {
         sum += selector(element)
@@ -263,95 +223,17 @@ public inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
     return sum
 }
 
-//bots: 10
-//rooms: 1
-//duration: 60s
-//sent packets: 2918 (48 packets/s)
-//received packets: 5985 (99 packets/s)
-//total bytes sent: 124985 (42 bytes/packet)
-//total bytes received: 905011 (151 bytes/packet)
-//vertx bytes read: 901120.0
-//latency measurements: 2917
-//pending latency measurements: 1
-//0.5 percentile - 78.6432 ms
-//0.95 percentile - 124.780544 ms
-//0.99 percentile - 133.169152 ms
-//0.999 percentile - 158.334976 ms
-
-//bots: 10
-//rooms: 1
-//duration: 60s
-//sent packets: 2897 (48 packets/s)
-//received packets: 5485 (91 packets/s)
-//total bytes sent: 124061 (42 bytes/packet)
-//total bytes received: 872689 (159 bytes/packet)
-//vertx bytes read: 860160.0
-//latency measurements: 2887
-//pending latency measurements: 10
-//0.5 percentile - 78.6432 ms
-//0.95 percentile - 128.974848 ms
-//0.99 percentile - 242.221056 ms
-//0.999 percentile - 300.941312 ms
+fun timer(name: String, desc: String = ""): Timer =
+    Timer.builder(name)
+        .description(desc)
+        .publishPercentiles(0.5, 0.95, 0.99, 0.999)
+        .publishPercentileHistogram()
+        .register(registry)
 
 
-//bots: 300
-//rooms: 10
-//duration: 60s
-//sent packets: 84910 (1415 packets/s)
-//received packets: 163133 (2718 packets/s)
-//total bytes sent: 3636489 (42 bytes/packet)
-//total bytes received: 64094823 (392 bytes/packet)
-//vertx bytes read: 6.3471616E7
-//latency measurements: 83986
-//pending latency measurements: 924
-//0.5 percentile - 91.226112 ms
-//0.95 percentile - 158.334976 ms
-//0.99 percentile - 191.889408 ms
-//0.999 percentile - 225.44384 ms
-
-//bots: 300
-//rooms: 10
-//duration: 60s
-//sent packets: 84335 (1405 packets/s)
-//received packets: 153935 (2565 packets/s)
-//total bytes sent: 3612358 (42 bytes/packet)
-//total bytes received: 63053028 (409 bytes/packet)
-//vertx bytes read: 6.2377984E7
-//latency measurements: 82961
-//pending latency measurements: 1374
-//0.5 percentile - 108.003328 ms
-//0.95 percentile - 569.376768 ms
-//0.99 percentile - 1945.10848 ms
-//0.999 percentile - 3354.394624 ms
-
-//bots: 300
-//rooms: 1
-//duration: 60s
-//sent packets: 83909 (1398 packets/s)
-//received packets: 144892 (2414 packets/s)
-//total bytes sent: 3593139 (42 bytes/packet)
-//total bytes received: 350070652 (2416 bytes/packet)
-//vertx bytes read: 3.49462528E8
-//latency measurements: 49868
-//pending latency measurements: 34028
-//0.5 percentile - 5628.755968 ms
-//0.95 percentile - 20392.706048 ms
-//0.99 percentile - 26835.156992 ms
-//0.999 percentile - 34351.34976 ms
-
-//bigger ids
-//bots: 300
-//rooms: 1
-//duration: 60s
-//sent packets: 83124 (1385 packets/s)
-//received packets: 74937 (1248 packets/s)
-//total bytes sent: 3559982 (42 bytes/packet)
-//total bytes received: 155673874 (2077 bytes/packet)
-//vertx bytes read: 1.55049984E8
-//latency measurements: 13327
-//pending latency measurements: 69766
-//0.5 percentile - 18236.833792 ms
-//0.95 percentile - 38637.928448 ms
-//0.99 percentile - 47227.86304 ms
-//0.999 percentile - 51522.830336 ms
-//CPU: 23% peak max
+fun Timer.printSummery() {
+    println("${id.name}:")
+    takeSnapshot().percentileValues().forEach {
+        println("${it.percentile()} percentile - ${it.value().toLong() / 1e6} ms")
+    }
+}
