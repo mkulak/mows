@@ -25,7 +25,6 @@ class WsApi(val json: Json) : Handler<ServerWebSocket> {
             handleClientCommand(msg, playerId)
         }
         ws.closeHandler {
-            logger.info("Disconnected $playerId")
             gameService.onLeave(playerId)
             clients.remove(playerId)
         }

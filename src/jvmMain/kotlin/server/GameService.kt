@@ -21,11 +21,10 @@ class GameService(val wsApi: WsApi) {
         val actualRoomId = requestedRoomId ?: rooms.values.minByOrNull { it.playerIds.size }?.id ?: RoomId(nextId())
         players[playerId] = Player(playerId, actualRoomId, pos)
         val room = rooms.getOrPut(actualRoomId) {
-            logger.info("creating new room: $actualRoomId")
             Room(actualRoomId, HashSet(), HashSet(), 0)
         }
         room.playerIds += playerId
-        logger.info("$playerId entered $actualRoomId, size: ${room.playerIds.size}")
+        joinCount++
         val message = FullRoomUpdateMessage(room.id.value, room.playerIds.associate { it.value to players[it]!!.pos })
         wsApi.send(playerId, LoginMessage(playerId.value))
         wsApi.send(playerId, message)
@@ -42,6 +41,7 @@ class GameService(val wsApi: WsApi) {
         }
         val room = player.room
         room.playerIds.remove(playerId)
+        leaveCount++
         room.playersWithUpdates.remove(playerId)
         if (room.playerIds.isNotEmpty()) {
             wsApi.send(room.playerIds, RemovePlayerMessage(playerId.value))
@@ -86,9 +86,24 @@ class GameService(val wsApi: WsApi) {
             }
             room.lastUpdateSentAt = now
         }
+        checkAnnouncement()
     }
 
     private val Player.room: Room get() = rooms[roomId]!!
 
+    var lastAnnouncementAt = 0L
+    var joinCount = 0
+    var leaveCount = 0
+
+    private fun checkAnnouncement() {
+        val now = System.currentTimeMillis()
+        if (now - lastAnnouncementAt > 2000 && (joinCount + leaveCount) > 0) {
+            println("joined $joinCount, left $leaveCount, current: ${players.size}")
+            joinCount = 0
+            leaveCount = 0
+            lastAnnouncementAt = now
+        }
+    }
+    
     companion object : KLogging()
 }
