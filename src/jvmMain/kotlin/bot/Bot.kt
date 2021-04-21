@@ -19,6 +19,7 @@ import io.vertx.core.http.WebSocket
 import io.vertx.core.http.WebSocketConnectOptions
 import io.vertx.kotlin.coroutines.awaitResult
 import io.vertx.micrometer.MicrometerMetricsOptions
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,6 +33,7 @@ import kotlinx.serialization.json.Json
 import server.MAP_HEIGHT
 import server.MAP_WIDTH
 import server.logger
+import java.lang.RuntimeException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextDouble
@@ -45,12 +47,7 @@ val myPositionTimer = timer("my-position-latency")
 val roomUpdateTimer = timer("room-update-latency")
 val loginTimer = timer("login-latency")
 
-val vertx = Vertx.vertx(VertxOptions().apply {
-    metricsOptions = MicrometerMetricsOptions().apply {
-        micrometerRegistry = registry
-        isEnabled = true
-    }
-}).exceptionHandler {
+val vertx = Vertx.vertx().exceptionHandler {
     println("Uncaught exception: $it")
 }
 val hostAndPort = System.getenv("TARGET_URL") ?: "ec2-18-156-174-230.eu-central-1.compute.amazonaws.com:7000"
@@ -65,9 +62,6 @@ suspend fun main(args: Array<String>) {
     val botCount = args[0].toInt()
     val rooms = args[1].toInt()
     val duration = args[2].toInt()
-    println("bots: $botCount")
-    println("rooms: $rooms")
-    println("duration: ${duration}s")
     println("target: $hostAndPort")
     val bots = List(botCount) { bot ->
         val room = bot % rooms
@@ -80,7 +74,7 @@ suspend fun main(args: Array<String>) {
     }
     println("started waiting")
     delay(duration * 1000L)
-    scope.coroutineContext[Job]?.cancelChildren()
+    scope.coroutineContext[Job]?.cancelChildren(StopTest())
     println("shutting down")
     tasks.forEach { it.join() }
     vertx.close()
@@ -105,7 +99,6 @@ private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
     println("received packets: $receivedCount (${receivedCount / duration} packets/s)")
     println("total bytes sent: $sentSize (${sentSize / sentCount} bytes/packet)")
     println("total bytes received: $receivedSize (${receivedSize / receivedCount} bytes/packet)")
-    println("vertx bytes read: ${registry.counter("vertx.http.client.bytes.read").count()}")
     println("latency measurements: $latencyMeasured")
     println("pending latency measurements: $pendingLatency")
     loginTimer.printSummery()
@@ -125,15 +118,15 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     var receivedSize = 0L
     var latencyMeasured = 0
 
-    var connectedAt = 0L
+    var startedAt = 0L
     var receivedFullUpdate = false
     var lastRoomUpdateAt = 0L
     var quitAbruptly = false
 
     suspend fun start() {
         try {
+            startedAt = System.currentTimeMillis()
             val ws = connect()
-            connectedAt = System.currentTimeMillis()
             delay(nextLong(1000))
             while (coroutineContext.isActive && !quitAbruptly) {
                 if (!receivedFullUpdate) {
@@ -143,11 +136,12 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
                 if (walking) {
                     advancePos()
                     sendPos(ws, pos)
-                    delay(400)
+                    delay(300)
                 } else {
                     delay(1000)
                 }
             }
+        } catch (ignore: StopTest) {
         } catch (e: Exception) {
             handleException(e)
         }
@@ -184,7 +178,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
             is LoginMessage -> myId = msg.id
             is FullRoomUpdateMessage -> {
                 receivedFullUpdate = true
-                loginTimer.record(System.currentTimeMillis() - connectedAt, MILLISECONDS)
+                loginTimer.record(System.currentTimeMillis() - startedAt, MILLISECONDS)
             }
             is UpdateMessage -> {
                 val index = msg.ids.indexOf(myId)
@@ -247,6 +241,8 @@ fun timer(name: String, desc: String = ""): Timer =
 fun Timer.printSummery() {
     println("${id.name}:")
     takeSnapshot().percentileValues().forEach {
-        println("${it.percentile()} percentile - ${it.value().toLong() / 1e6} ms")
+        println("${it.percentile()} percentile - ${it.value().toLong() / 1000000} ms")
     }
 }
+
+class StopTest : CancellationException()
