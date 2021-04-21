@@ -1,4 +1,5 @@
 import common.ClientCommand
+import common.FullRoomUpdateMessage
 import common.LoginMessage
 import common.MoveCommand
 import common.ServerMessage
@@ -42,6 +43,7 @@ val speed = 100.0
 val registry = SimpleMeterRegistry()
 val myPositionTimer = timer("my-position-latency")
 val roomUpdateTimer = timer("room-update-latency")
+val loginTimer = timer("login-latency")
 
 val vertx = Vertx.vertx(VertxOptions().apply {
     metricsOptions = MicrometerMetricsOptions().apply {
@@ -106,6 +108,7 @@ private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
     println("vertx bytes read: ${registry.counter("vertx.http.client.bytes.read").count()}")
     println("latency measurements: $latencyMeasured")
     println("pending latency measurements: $pendingLatency")
+    loginTimer.printSummery()
     myPositionTimer.printSummery()
     roomUpdateTimer.printSummery()
 }
@@ -122,15 +125,21 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     var receivedSize = 0L
     var latencyMeasured = 0
 
+    var connectedAt = 0L
+    var receivedFullUpdate = false
     var lastRoomUpdateAt = 0L
     var quitAbruptly = false
 
     suspend fun start() {
         try {
             val ws = connect()
-//        println("connected bot#$bot room#$room")
+            connectedAt = System.currentTimeMillis()
             delay(nextLong(1000))
             while (coroutineContext.isActive && !quitAbruptly) {
+                if (!receivedFullUpdate) {
+                    delay(500)
+                    continue
+                }
                 if (walking) {
                     advancePos()
                     sendPos(ws, pos)
@@ -173,6 +182,10 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         val now = System.currentTimeMillis()
         when (msg) {
             is LoginMessage -> myId = msg.id
+            is FullRoomUpdateMessage -> {
+                receivedFullUpdate = true
+                loginTimer.record(System.currentTimeMillis() - connectedAt, MILLISECONDS)
+            }
             is UpdateMessage -> {
                 val index = msg.ids.indexOf(myId)
                 if (index != -1) {
