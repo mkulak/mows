@@ -101,6 +101,6 @@ fun move(from: XY, to: XY, dt: Double, me: Boolean): XY {
     }
 }
 
-val POS_UPDATE_RATE = 400.0
+val POS_UPDATE_RATE = 300.0
 val MOVE_SPEED = 0.4
 val OTHER_SPEED_MUL = 0.8
