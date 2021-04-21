@@ -14,7 +14,7 @@ val json = Json { ignoreUnknownKeys = true }
 suspend fun main() {
     val port = System.getenv("WONDER_PORT")?.toInt() ?: 8080
     val vertx = Vertx.vertx().exceptionHandler {
-        logger.info("Uncaught exception: $it")
+        logger.error("Uncaught exception: $it")
     }
     val wsApi = WsApi(json)
     val gameService = GameService(wsApi)
@@ -23,12 +23,11 @@ suspend fun main() {
     val scope = CoroutineScope(vertx.dispatcher())
     val ticker = RoomTicker(scope, gameService)
     ticker.start()
-    logger.info("Starting server")
     vertx.createHttpServer()
         .requestHandler(httpApi)
         .webSocketHandler(wsApi)
         .exceptionHandler { it.printStackTrace() }
         .listen(port)
         .await()
-    println("Started at :$port")
+    println("space-poc-server v1 started at :$port")
 }
