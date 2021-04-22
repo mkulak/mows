@@ -41,9 +41,9 @@ import kotlin.time.ExperimentalTime
 val json = Json { ignoreUnknownKeys = true }
 val speed = 100.0
 val registry = SimpleMeterRegistry()
-val myPositionTimer = timer("my-position-latency")
-val roomUpdateTimer = timer("room-update-latency")
-val loginTimer = timer("login-latency")
+val myPositionTimer = timer("my-position-latency", "time betwen sending position and receiving update with this position")
+val roomUpdateTimer = timer("room-update-latency", "time between consecutive room updates")
+val loginTimer = timer("join-latency", "duration of opening websocket + time till full room update is received")
 
 val vertx = Vertx.vertx().exceptionHandler {
     println("Uncaught exception: $it")
