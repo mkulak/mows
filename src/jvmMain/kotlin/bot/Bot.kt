@@ -14,28 +14,24 @@ import common.times
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.vertx.core.Vertx
-import io.vertx.core.VertxOptions
 import io.vertx.core.http.WebSocket
 import io.vertx.core.http.WebSocketConnectOptions
 import io.vertx.kotlin.coroutines.awaitResult
-import io.vertx.micrometer.MicrometerMetricsOptions
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import server.MAP_HEIGHT
 import server.MAP_WIDTH
 import server.logger
-import java.lang.RuntimeException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextDouble
@@ -125,12 +121,15 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     var lastRoomUpdateAt = 0L
     var quitAbruptly = false
 
+    val incomingMessages = Channel<Pair<String, Long>>()
+
     suspend fun start() {
         try {
             startedAt = System.currentTimeMillis()
             val ws = connect()
             delay(nextLong(1000))
             while (coroutineContext.isActive && !quitAbruptly) {
+                handleIncoming()
                 if (!receivedFullUpdate) {
                     delay(500)
                     continue
@@ -146,6 +145,37 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         } catch (ignore: StopTest) {
         } catch (e: Exception) {
             handleException(e)
+        }
+    }
+
+    suspend fun handleIncoming() {
+        while (!incomingMessages.isEmpty) {
+            val (res, time) = incomingMessages.receive()
+            receivedCount++
+            receivedSize += res.length
+            val msg = json.decodeFromString<ServerMessage>(res)
+            when (msg) {
+                is LoginMessage -> myId = msg.id
+                is FullRoomUpdateMessage -> {
+                    receivedFullUpdate = true
+                    loginTimer.record(time - startedAt, MILLISECONDS)
+                }
+                is UpdateMessage -> {
+                    val index = msg.ids.indexOf(myId)
+                    if (index != -1) {
+                        val pos = XY(msg.xs[index], msg.ys[index])
+                        val sentAt = pos2time.remove(pos)
+                        if (sentAt != null) {
+                            myPositionTimer.record(time - sentAt, MILLISECONDS)
+                            latencyMeasured++
+                        }
+                    }
+                    if (lastRoomUpdateAt != 0L) {
+                        roomUpdateTimer.record(time - lastRoomUpdateAt, MILLISECONDS)
+                    }
+                    lastRoomUpdateAt = time
+                }
+            }
         }
     }
 
@@ -172,33 +202,8 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         }
 
     private fun handleMessage(res: String) {
-        val now = System.currentTimeMillis()
         scope.launch {
-            receivedCount++
-            receivedSize += res.length
-            val msg = json.decodeFromString<ServerMessage>(res)
-            when (msg) {
-                is LoginMessage -> myId = msg.id
-                is FullRoomUpdateMessage -> {
-                    receivedFullUpdate = true
-                    loginTimer.record(now - startedAt, MILLISECONDS)
-                }
-                is UpdateMessage -> {
-                    val index = msg.ids.indexOf(myId)
-                    if (index != -1) {
-                        val pos = XY(msg.xs[index], msg.ys[index])
-                        val sentAt = pos2time.remove(pos)
-                        if (sentAt != null) {
-                            myPositionTimer.record(now - sentAt, MILLISECONDS)
-                            latencyMeasured++
-                        }
-                    }
-                    if (lastRoomUpdateAt != 0L) {
-                        roomUpdateTimer.record(now - lastRoomUpdateAt, MILLISECONDS)
-                    }
-                    lastRoomUpdateAt = now
-                }
-            }
+            incomingMessages.send(res to System.currentTimeMillis())
         }
     }
 
