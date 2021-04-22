@@ -132,17 +132,11 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
             delay(nextLong(1000))
             while (coroutineContext.isActive && !quitAbruptly) {
                 handleIncoming()
-                if (!receivedFullUpdate) {
-                    delay(500)
-                    continue
-                }
-                if (walking) {
+                if (receivedFullUpdate && walking) {
                     advancePos()
                     sendPos(ws, pos)
-                    delay(300)
-                } else {
-                    delay(1000)
                 }
+                delay(300)
             }
         } catch (ignore: StopTest) {
         } catch (e: Exception) {
@@ -161,7 +155,6 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
                 is FullRoomUpdateMessage -> {
                     receivedFullUpdate = true
                     val loginTime = time - startedAt
-                    println("Bot #${bot} joined in $loginTime ms")
                     loginTimer.record(loginTime, MILLISECONDS)
                 }
                 is UpdateMessage -> {
@@ -249,7 +242,7 @@ fun timer(name: String, desc: String = ""): Timer =
         .description(desc)
         .publishPercentiles(0.5, 0.95, 0.99, 0.999)
         .publishPercentileHistogram()
-        .distributionStatisticExpiry(Duration.of(20, ChronoUnit.MINUTES))
+        .distributionStatisticExpiry(Duration.of(5, ChronoUnit.MINUTES))
         .register(registry)
 
 
