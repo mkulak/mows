@@ -1,6 +1,7 @@
 package server
 
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -9,7 +10,11 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
 class RoomTicker(val scope: CoroutineScope, val gameService: GameService, registry: MeterRegistry) {
-    val timer = registry.timer("tickDuration")
+    val timer = Timer.builder("tickDuration")
+        .publishPercentiles(0.5, 0.95, 0.99, 0.999)
+        .publishPercentileHistogram()
+        .register(registry)
+
     val tickInterval = System.getenv("TICK_INTERVAL")?.toInt() ?: 200
 
     fun start() {
