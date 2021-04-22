@@ -32,6 +32,8 @@ import kotlinx.serialization.json.Json
 import server.MAP_HEIGHT
 import server.MAP_WIDTH
 import server.logger
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextDouble
@@ -158,7 +160,9 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
                 is LoginMessage -> myId = msg.id
                 is FullRoomUpdateMessage -> {
                     receivedFullUpdate = true
-                    loginTimer.record(time - startedAt, MILLISECONDS)
+                    val loginTime = time - startedAt
+                    println("Bot #${bot} joined in $loginTime ms")
+                    loginTimer.record(loginTime, MILLISECONDS)
                 }
                 is UpdateMessage -> {
                     val index = msg.ids.indexOf(myId)
@@ -245,6 +249,7 @@ fun timer(name: String, desc: String = ""): Timer =
         .description(desc)
         .publishPercentiles(0.5, 0.95, 0.99, 0.999)
         .publishPercentileHistogram()
+        .distributionStatisticExpiry(Duration.of(20, ChronoUnit.MINUTES))
         .register(registry)
 
 
