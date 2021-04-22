@@ -71,6 +71,7 @@ kotlin {
                 implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.2")
                 implementation("io.micrometer:micrometer-core:1.6.6")
                 implementation("io.vertx:vertx-micrometer-metrics:4.0.3")
+                implementation("io.micrometer:micrometer-registry-prometheus:1.6.6")
                 implementation("org.apache.logging.log4j:log4j-core:2.13.3")
                 implementation("org.apache.logging.log4j:log4j-api:2.13.3")
                 implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.13.3")

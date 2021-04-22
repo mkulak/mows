@@ -23,10 +23,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -51,10 +53,10 @@ val vertx = Vertx.vertx().exceptionHandler {
     println("Uncaught exception: $it")
 }
 val hostAndPort = System.getenv("TARGET_URL") ?: "ec2-18-156-174-230.eu-central-1.compute.amazonaws.com:7000"
+val scope = CoroutineScope(Dispatchers.Default)
 
 @ExperimentalTime
 suspend fun main(args: Array<String>) {
-    val scope = CoroutineScope(Dispatchers.Default)
     if (args.size != 3) {
         println("required args: bots-count rooms-count duration-in-seconds")
         System.exit(0)
@@ -170,30 +172,32 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         }
 
     private fun handleMessage(res: String) {
-        receivedCount++
-        receivedSize += res.length
-        val msg = json.decodeFromString<ServerMessage>(res)
         val now = System.currentTimeMillis()
-        when (msg) {
-            is LoginMessage -> myId = msg.id
-            is FullRoomUpdateMessage -> {
-                receivedFullUpdate = true
-                loginTimer.record(System.currentTimeMillis() - startedAt, MILLISECONDS)
-            }
-            is UpdateMessage -> {
-                val index = msg.ids.indexOf(myId)
-                if (index != -1) {
-                    val pos = XY(msg.xs[index], msg.ys[index])
-                    val sentAt = pos2time.remove(pos)
-                    if (sentAt != null) {
-                        myPositionTimer.record(now - sentAt, MILLISECONDS)
-                        latencyMeasured++
+        scope.launch {
+            receivedCount++
+            receivedSize += res.length
+            val msg = json.decodeFromString<ServerMessage>(res)
+            when (msg) {
+                is LoginMessage -> myId = msg.id
+                is FullRoomUpdateMessage -> {
+                    receivedFullUpdate = true
+                    loginTimer.record(now - startedAt, MILLISECONDS)
+                }
+                is UpdateMessage -> {
+                    val index = msg.ids.indexOf(myId)
+                    if (index != -1) {
+                        val pos = XY(msg.xs[index], msg.ys[index])
+                        val sentAt = pos2time.remove(pos)
+                        if (sentAt != null) {
+                            myPositionTimer.record(now - sentAt, MILLISECONDS)
+                            latencyMeasured++
+                        }
                     }
+                    if (lastRoomUpdateAt != 0L) {
+                        roomUpdateTimer.record(now - lastRoomUpdateAt, MILLISECONDS)
+                    }
+                    lastRoomUpdateAt = now
                 }
-                if (lastRoomUpdateAt != 0L) {
-                    roomUpdateTimer.record(now - lastRoomUpdateAt, MILLISECONDS)
-                }
-                lastRoomUpdateAt = now
             }
         }
     }

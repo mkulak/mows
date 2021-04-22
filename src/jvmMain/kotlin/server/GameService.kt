@@ -8,11 +8,12 @@ import common.MoveCommand
 import common.RemovePlayerMessage
 import common.UpdateMessage
 import common.XY
+import io.micrometer.core.instrument.MeterRegistry
 import mu.KLogging
 import kotlin.math.round
 import kotlin.random.Random.Default.nextDouble
 
-class GameService(val wsApi: WsApi) {
+class GameService(val wsApi: WsApi, val registry: MeterRegistry) {
     val players = mutableMapOf<PlayerId, Player>()
     val rooms = mutableMapOf<RoomId, Room>()
 
@@ -24,6 +25,7 @@ class GameService(val wsApi: WsApi) {
             Room(actualRoomId, HashSet(), HashSet(), 0)
         }
         room.playerIds += playerId
+        registry.gauge("playersCount", players.size)
         joinCount++
         val message = FullRoomUpdateMessage(room.id.value, room.playerIds.associate { it.value to players[it]!!.pos })
         wsApi.send(playerId, LoginMessage(playerId.value))
@@ -41,6 +43,7 @@ class GameService(val wsApi: WsApi) {
         }
         val room = player.room
         room.playerIds.remove(playerId)
+        registry.gauge("playersCount", players.size)
         leaveCount++
         room.playersWithUpdates.remove(playerId)
         if (room.playerIds.isNotEmpty()) {
