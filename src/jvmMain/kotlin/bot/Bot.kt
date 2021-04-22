@@ -60,7 +60,7 @@ suspend fun main(args: Array<String>) {
     val botCount = args[0].toInt()
     val rooms = args[1].toInt()
     val duration = args[2].toInt()
-    println("target: $hostAndPort")
+    println("bots v1.0, target: $hostAndPort")
     val bots = List(botCount) { bot ->
         val room = bot % rooms
         Bot(vertx, bot, room, true)
@@ -202,8 +202,9 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         }
 
     private fun handleMessage(res: String) {
+        val time = System.currentTimeMillis()
         scope.launch {
-            incomingMessages.send(res to System.currentTimeMillis())
+            incomingMessages.send(res to time)
         }
     }
 
