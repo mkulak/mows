@@ -43,9 +43,9 @@ import kotlin.time.ExperimentalTime
 val json = Json { ignoreUnknownKeys = true }
 val speed = 100.0
 val registry = SimpleMeterRegistry()
-val myPositionTimer = timer("my-position-latency", "time betwen sending position and receiving update with this position")
+//val myPositionTimer = timer("my-position-latency", "time betwen sending position and receiving update with this position")
 val roomUpdateTimer = timer("room-update-latency", "time between consecutive room updates")
-val loginTimer = timer("join-latency", "duration of opening websocket + time till full room update is received")
+//val loginTimer = timer("join-latency", "duration of opening websocket + time till full room update is received")
 
 val vertx = Vertx.vertx().exceptionHandler {
     println("Uncaught exception: $it")
@@ -62,7 +62,7 @@ suspend fun main(args: Array<String>) {
     val botCount = args[0].toInt()
     val rooms = args[1].toInt()
     val duration = args[2].toInt()
-    println("bots v1.0, target: $hostAndPort")
+    println("bots v1.2, target: $hostAndPort")
     val bots = List(botCount) { bot ->
         val room = bot % rooms
         Bot(vertx, bot, room, true)
@@ -90,8 +90,8 @@ private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
     val sentSize = bots.sumByLong { it.sentSize }
     val receivedCount = bots.sumBy { it.receivedCount }
     val receivedSize = bots.sumByLong { it.receivedSize }
-    val latencyMeasured = bots.sumBy { it.latencyMeasured }
-    val pendingLatency = bots.sumBy { it.pos2time.size }
+//    val latencyMeasured = bots.sumBy { it.latencyMeasured }
+//    val pendingLatency = bots.sumBy { it.pos2time.size }
     println("bots: ${bots.size}")
     println("rooms: $rooms")
     println("duration: ${duration}s")
@@ -99,16 +99,16 @@ private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
     println("received packets: $receivedCount (${receivedCount / duration} packets/s)")
     println("total bytes sent: $sentSize (${sentSize / sentCount} bytes/packet)")
     println("total bytes received: $receivedSize (${receivedSize / receivedCount} bytes/packet)")
-    println("latency measurements: $latencyMeasured")
-    println("pending latency measurements: $pendingLatency")
-    loginTimer.printSummery()
-    myPositionTimer.printSummery()
+//    println("latency measurements: $latencyMeasured")
+//    println("pending latency measurements: $pendingLatency")
+//    loginTimer.printSummery()
+//    myPositionTimer.printSummery()
     roomUpdateTimer.printSummery()
 }
 
 class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
-    var myId = ""
-    val pos2time = HashMap<XY, Long>()
+//    var myId = ""
+//    val pos2time = HashMap<XY, Long>()
     var pos = randomPoint()
     var target = randomPoint()
 
@@ -151,22 +151,22 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
             receivedSize += res.length
             val msg = json.decodeFromString<ServerMessage>(res)
             when (msg) {
-                is LoginMessage -> myId = msg.id
+                is LoginMessage -> Unit // myId = msg.id
                 is FullRoomUpdateMessage -> {
                     receivedFullUpdate = true
-                    val loginTime = time - startedAt
-                    loginTimer.record(loginTime, MILLISECONDS)
+//                    val loginTime = time - startedAt
+//                    loginTimer.record(loginTime, MILLISECONDS)
                 }
                 is UpdateMessage -> {
-                    val index = msg.ids.indexOf(myId)
-                    if (index != -1) {
-                        val pos = XY(msg.xs[index], msg.ys[index])
-                        val sentAt = pos2time.remove(pos)
-                        if (sentAt != null) {
-                            myPositionTimer.record(time - sentAt, MILLISECONDS)
-                            latencyMeasured++
-                        }
-                    }
+//                    val index = msg.ids.indexOf(myId)
+//                    if (index != -1) {
+//                        val pos = XY(msg.xs[index], msg.ys[index])
+//                        val sentAt = pos2time.remove(pos)
+//                        if (sentAt != null) {
+//                            myPositionTimer.record(time - sentAt, MILLISECONDS)
+//                            latencyMeasured++
+//                        }
+//                    }
                     if (lastRoomUpdateAt != 0L) {
                         roomUpdateTimer.record(time - lastRoomUpdateAt, MILLISECONDS)
                     }
@@ -206,9 +206,9 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     }
 
     private fun sendPos(ws: WebSocket, pos: XY) {
-        if (pos !in pos2time) {
-            pos2time[pos] = System.currentTimeMillis()
-        }
+//        if (pos !in pos2time) {
+//            pos2time[pos] = System.currentTimeMillis()
+//        }
         val str = json.encodeToString(MoveCommand(pos) as ClientCommand)
         ws.writeTextMessage(str)
         sentCount++
