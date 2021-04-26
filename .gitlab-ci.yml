@@ -1,4 +1,4 @@
-image: gradle
+image: gradle:6
 
 stages:
   - terraform
