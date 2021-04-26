@@ -21,7 +21,7 @@ class GameService(val wsApi: WsApi, val registry: MeterRegistry) {
 
     fun onJoin(playerId: PlayerId, requestedRoomId: RoomId?) {
         val pos = XY(nextDouble(MAP_WIDTH), nextDouble(MAP_HEIGHT))
-        val actualRoomId = requestedRoomId ?: rooms.values.minByOrNull { it.playerIds.size }?.id ?: RoomId(nextId())
+        val actualRoomId = requestedRoomId ?: rooms.values.minByOrNull { it.playerIds.size }?.id ?: RoomId(nextId().toString())
         players[playerId] = Player(playerId, actualRoomId, pos)
         val room = rooms.getOrPut(actualRoomId) {
             Room(actualRoomId, HashSet(), HashSet(), 0)
@@ -78,7 +78,7 @@ class GameService(val wsApi: WsApi, val registry: MeterRegistry) {
 //                continue
 //            }
             if (room.playersWithUpdates.isNotEmpty()) {
-                val ids = ArrayList<String>()
+                val ids = ArrayList<Int>()
                 val xs = ArrayList<Double>()
                 val ys = ArrayList<Double>()
                 room.playersWithUpdates.forEach {

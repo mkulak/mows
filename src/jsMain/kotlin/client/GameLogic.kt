@@ -19,7 +19,7 @@ import common.times
 
 class GameLogic {
     lateinit var networkModule: NetworkModule
-    val room = Room(RoomId(""), PlayerId(""), HashMap())
+    val room = Room(RoomId(""), PlayerId(0), HashMap())
     var elapsedSinceLastPosUpdate = 0.0
 
     fun handle(message: ServerMessage) {
@@ -44,7 +44,7 @@ class GameLogic {
         }
     }
 
-    private fun addPlayer(id: String, pos: XY) {
+    private fun addPlayer(id: Int, pos: XY) {
         val playerId = PlayerId(id)
         room.players[playerId] = Player(playerId, pos, pos)
     }

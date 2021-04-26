@@ -15,14 +15,14 @@ data class Room(
 ) {
     fun clear() {
         id = RoomId("")
-        myId = PlayerId("")
+        myId = PlayerId(0)
         players.clear()
     }
     fun me(): Player? = players[myId]
 }
 
-data class PlayerId(val value: String) {
-    override fun toString() = value
+data class PlayerId(val value: Int) {
+    override fun toString() = value.toString()
 }
 
 data class RoomId(val value: String) {

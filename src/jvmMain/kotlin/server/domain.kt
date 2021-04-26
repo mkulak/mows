@@ -11,8 +11,8 @@ data class ConnectedClient(
     val ws: ServerWebSocket
 )
 
-data class PlayerId @JsonCreator(mode = DELEGATING) constructor(@JsonValue val value: String) {
-    override fun toString() = value
+data class PlayerId @JsonCreator(mode = DELEGATING) constructor(@JsonValue val value: Int) {
+    override fun toString() = value.toString()
 }
 
 data class RoomId @JsonCreator(mode = DELEGATING) constructor(@JsonValue val value: String) {

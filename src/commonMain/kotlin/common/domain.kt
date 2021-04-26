@@ -11,23 +11,23 @@ sealed class ServerMessage
 
 @Serializable
 @SerialName("login")
-data class LoginMessage(val id: String) : ServerMessage()
+data class LoginMessage(val id: Int) : ServerMessage()
 
 @Serializable
 @SerialName("full_update")
-data class FullRoomUpdateMessage(val roomId: String, val players: Map<String, XY>) : ServerMessage()
+data class FullRoomUpdateMessage(val roomId: String, val players: Map<Int, XY>) : ServerMessage()
 
 @Serializable
 @SerialName("update")
-data class UpdateMessage(val ids: List<String>, val xs: List<Double>, val ys: List<Double>) : ServerMessage()
+data class UpdateMessage(val ids: List<Int>, val xs: List<Double>, val ys: List<Double>) : ServerMessage()
 
 @Serializable
 @SerialName("add")
-data class AddPlayerMessage(val id: String, val pos: XY) : ServerMessage()
+data class AddPlayerMessage(val id: Int, val pos: XY) : ServerMessage()
 
 @Serializable
 @SerialName("remove")
-data class RemovePlayerMessage(val id: String) : ServerMessage()
+data class RemovePlayerMessage(val id: Int) : ServerMessage()
 
 @Serializable
 @SerialName("pong")
