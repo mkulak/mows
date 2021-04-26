@@ -47,9 +47,9 @@ build:
   stage: build
   script:
     - gradle build
-  #artifacts:
-    #paths:
-      #- build
+  artifacts:
+    paths:
+      - build/libs/wonder.jar
 
 ## DNS stages
 dns:
