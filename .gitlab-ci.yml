@@ -6,6 +6,11 @@ stages:
   - prep
   - deploy
 
+cache:
+  key: gradle-cache
+  paths:
+    - .gradle
+
 variables:
   FF_USE_FASTZIP: 1
 
