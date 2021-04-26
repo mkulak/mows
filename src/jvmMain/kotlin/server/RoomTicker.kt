@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
 class RoomTicker(val scope: CoroutineScope, val gameService: GameService, val registry: MeterRegistry) {
-    val timer = Timer.builder("tickDuration")
+    val timer = Timer.builder("tick_duration")
         .publishPercentiles(0.5, 0.95, 0.99, 0.999)
         .publishPercentileHistogram()
         .register(registry)

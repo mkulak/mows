@@ -17,6 +17,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.vertx.core.Vertx
 import io.vertx.core.http.WebSocket
 import io.vertx.core.http.WebSocketConnectOptions
+import io.vertx.ext.web.client.WebClient
+import io.vertx.kotlin.coroutines.await
 import io.vertx.kotlin.coroutines.awaitResult
 import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.CancellationException
@@ -74,6 +76,8 @@ suspend fun main(args: Array<String>) {
     }
     println("started waiting")
     delay(duration * 1000L)
+    println("retrieving metrics")
+    val metrics = retrieveMetrics()
     scope.coroutineContext[Job]?.cancelChildren(StopTest())
     println("shutting down")
     tasks.forEach { it.join() }
@@ -82,10 +86,17 @@ suspend fun main(args: Array<String>) {
     if (deadBotsCount != 0) {
         println("WARNING: $deadBotsCount bots died. Results are affected")
     }
-    printResults(bots, rooms, duration)
+    printResults(bots, rooms, duration, metrics)
 }
 
-private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
+suspend fun retrieveMetrics(): String {
+    val httpClient = WebClient.create(vertx)
+    val (host, _) = hostAndPort.split(":")
+    val raw = httpClient.get(3001, host, "/metrics").send().await().bodyAsString()
+    return raw.split("\n").filter { "tick_duration{quantile=\"0.9" in it }.joinToString("\n")
+}
+
+private fun printResults(bots: List<Bot>, rooms: Int, duration: Int, metrics: String) {
     val sentCount = bots.sumBy { it.sentCount }
     val sentSize = bots.sumByLong { it.sentSize }
     val receivedCount = bots.sumBy { it.receivedCount }
@@ -99,6 +110,7 @@ private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
     println("total bytes received: $receivedSize (${receivedSize / receivedCount} bytes/packet)")
     roomUpdateTimer.printSummery()
     pingTimer.printSummery()
+    println(metrics)
 }
 
 class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
