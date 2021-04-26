@@ -120,8 +120,8 @@ deploy:
         done <variables.env
       EOF
     - chmod +x multi-scp.sh
-    - cat multi-scp.sh
-    - ls -la multi-scp.sh
+    - cat multi-scp.sh && ls -la multi-scp.sh
+    - ./multi-scp.sh
     #- scp -r -o StrictHostKeyChecking=no build/ ec2-user@$host:~
   # only:
   #   changes:
