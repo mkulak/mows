@@ -22,7 +22,7 @@ variables:
     - gitlab-terraform plan-json
     #- gitlab-terraform apply
   cache:
-    key: "terraform-wonder-back-${env_name}"
+    key: "terraform-wonder-backend-${env_name}"
     paths:
       - "${CI_PROJECT_DIR}/terraform/environment/${env_name}/.terraform"
   artifacts:

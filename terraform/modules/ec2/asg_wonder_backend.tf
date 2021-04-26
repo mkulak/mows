@@ -2,7 +2,7 @@ resource "aws_autoscaling_group" "wonder-backend" {
   desired_capacity    = var.instance_count_desired
   max_size            = var.instance_count_max
   min_size            = var.instance_count_min
-  vpc_zone_identifier = data.aws_subnet_ids.public.ids
+  vpc_zone_identifier = data.aws_subnet_ids.private.ids
 
   instance_refresh {
     strategy = "Rolling"
