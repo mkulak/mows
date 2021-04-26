@@ -20,7 +20,7 @@ variables:
     - gitlab-terraform validate
     - gitlab-terraform plan
     - gitlab-terraform plan-json
-    #- gitlab-terraform apply
+    - gitlab-terraform apply
   cache:
     key: "terraform-wonder-backend-${env_name}"
     paths:
