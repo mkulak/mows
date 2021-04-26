@@ -64,7 +64,7 @@ suspend fun main(args: Array<String>) {
     val botCount = args[0].toInt()
     val rooms = args[1].toInt()
     val duration = args[2].toInt()
-    println("bots v1.4, target: $hostAndPort")
+    println("bots v1.5, target: $hostAndPort")
     val bots = List(botCount) { bot ->
         val room = bot % rooms
         Bot(vertx, bot, room, true)

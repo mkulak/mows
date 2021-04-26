@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 
 
 plugins {
-    kotlin("multiplatform") version "1.4.32"
-    kotlin("plugin.serialization") version "1.4.32"
+    kotlin("multiplatform") version "1.5.0-RC"
+    kotlin("plugin.serialization") version "1.5.0-RC"
     application
     id("com.github.johnrengelman.shadow") version "4.0.4"
 }
@@ -139,3 +139,5 @@ tasks.getByName<ShadowJar>("shadowJar") {
     archiveClassifier.set("")
     archiveVersion.set("")
 }
+
+tasks.named("build") { dependsOn(tasks.named("shadowJar")) }
