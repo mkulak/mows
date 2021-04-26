@@ -37,6 +37,7 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.coroutines.coroutineContext
 import kotlin.random.Random.Default.nextDouble
+import kotlin.random.Random.Default.nextInt
 import kotlin.random.Random.Default.nextLong
 import kotlin.time.ExperimentalTime
 
@@ -61,7 +62,7 @@ suspend fun main(args: Array<String>) {
     val botCount = args[0].toInt()
     val rooms = args[1].toInt()
     val duration = args[2].toInt()
-    println("bots v1.3, target: $hostAndPort")
+    println("bots v1.4, target: $hostAndPort")
     val bots = List(botCount) { bot ->
         val room = bot % rooms
         Bot(vertx, bot, room, true)
@@ -142,7 +143,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         if (now - lastPingSentAt < 1000) {
             return
         }
-        val pingId = nextLong()
+        val pingId = nextInt(100_000_000).toLong()
         ping2time[pingId] = now
         sendCommand(ws, PingCommand(pingId))
     }
