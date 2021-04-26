@@ -5,6 +5,8 @@ import common.ClientCommand
 import common.FullRoomUpdateMessage
 import common.LoginMessage
 import common.MoveCommand
+import common.PingCommand
+import common.PongCommand
 import common.RemovePlayerMessage
 import common.UpdateMessage
 import common.XY
@@ -65,6 +67,7 @@ class GameService(val wsApi: WsApi, val registry: MeterRegistry) {
                 players[playerId] = updatedPlayer
                 updatedPlayer.room.playersWithUpdates += playerId
             }
+            is PingCommand -> wsApi.send(playerId, PongCommand(command.id))
         }
     }
 

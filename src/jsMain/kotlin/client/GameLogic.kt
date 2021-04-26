@@ -4,6 +4,7 @@ import common.AddPlayerMessage
 import common.FullRoomUpdateMessage
 import common.LoginMessage
 import common.MoveCommand
+import common.PongCommand
 import common.RemovePlayerMessage
 import common.ServerMessage
 import common.UpdateMessage
@@ -39,6 +40,7 @@ class GameLogic {
                     player.serverPos = XY(message.xs[index], message.ys[index])
                 }
             }
+            is PongCommand -> Unit
         }
     }
 

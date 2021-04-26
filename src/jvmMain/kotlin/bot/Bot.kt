@@ -1,6 +1,8 @@
 import common.ClientCommand
 import common.FullRoomUpdateMessage
 import common.MoveCommand
+import common.PingCommand
+import common.PongCommand
 import common.ServerMessage
 import common.UpdateMessage
 import common.XY
@@ -42,6 +44,7 @@ val json = Json { ignoreUnknownKeys = true }
 val speed = 100.0
 val registry = SimpleMeterRegistry()
 val roomUpdateTimer = timer("room-update-latency", "time between consecutive room updates")
+val pingTimer = timer("ping-latency", "time between ping and pong")
 
 val vertx = Vertx.vertx().exceptionHandler {
     println("Uncaught exception: $it")
@@ -94,6 +97,7 @@ private fun printResults(bots: List<Bot>, rooms: Int, duration: Int) {
     println("total bytes sent: $sentSize (${sentSize / sentCount} bytes/packet)")
     println("total bytes received: $receivedSize (${receivedSize / receivedCount} bytes/packet)")
     roomUpdateTimer.printSummery()
+    pingTimer.printSummery()
 }
 
 class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
@@ -109,6 +113,8 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
     var receivedFullUpdate = false
     var lastRoomUpdateAt = 0L
     var quitAbruptly = false
+    val ping2time = HashMap<Long, Long>()
+    var lastPingSentAt = 0L
 
     suspend fun start() {
         try {
@@ -116,9 +122,12 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
             delay(nextLong(3000))
             val ws = connect()
             while (coroutineContext.isActive && !quitAbruptly) {
-                if (receivedFullUpdate && walking) {
-                    advancePos()
-                    sendPos(ws, pos)
+                if (receivedFullUpdate) {
+                    trySendPing(ws)
+                    if (walking) {
+                        advancePos()
+                        sendCommand(ws, MoveCommand(pos))
+                    }
                 }
                 delay(300)
             }
@@ -126,6 +135,16 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         } catch (e: Exception) {
             handleException(e)
         }
+    }
+
+    private fun trySendPing(ws: WebSocket) {
+        val now = System.currentTimeMillis()
+        if (now - lastPingSentAt < 1000) {
+            return
+        }
+        val pingId = nextLong()
+        ping2time[pingId] = now
+        sendCommand(ws, PingCommand(pingId))
     }
 
     private fun handleException(e: Throwable) {
@@ -162,11 +181,19 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
                 }
                 lastRoomUpdateAt = time
             }
+            is PongCommand -> {
+                val sentAt = ping2time.remove(msg.id)
+                if (sentAt != null) {
+                    pingTimer.record(time - sentAt, MILLISECONDS)
+                }  else {
+                    logger.warn("#${bot} received strange ping: ${msg.id}")
+                }
+            }
         }
     }
 
-    private fun sendPos(ws: WebSocket, pos: XY) {
-        val str = json.encodeToString(MoveCommand(pos) as ClientCommand)
+    private fun sendCommand(ws: WebSocket, command: ClientCommand) {
+        val str = json.encodeToString(command)
         ws.writeTextMessage(str)
         sentCount++
         sentSize += str.length

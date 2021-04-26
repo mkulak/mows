@@ -30,9 +30,16 @@ data class AddPlayerMessage(val id: String, val pos: XY) : ServerMessage()
 data class RemovePlayerMessage(val id: String) : ServerMessage()
 
 @Serializable
+@SerialName("pong")
+data class PongCommand(val id: Long) : ServerMessage()
+
+@Serializable
 sealed class ClientCommand
 
 @Serializable
 @SerialName("move")
 data class MoveCommand(val pos: XY) : ClientCommand()
 
+@Serializable
+@SerialName("ping")
+data class PingCommand(val id: Long) : ClientCommand()
