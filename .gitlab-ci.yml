@@ -9,7 +9,7 @@ stages:
 cache:
   key: gradle-cache
   paths:
-    - .gradle
+    - .gradle/caches
 
 variables:
   FF_USE_FASTZIP: 1
@@ -61,6 +61,7 @@ dns:
   image:
     name: 791841456797.dkr.ecr.eu-central-1.amazonaws.com/base:latest
   stage: build
+  cache: {}
   script:
     - export IP_PRIVATE=$(aws --region eu-central-1 ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=wonder-jvm" --query 'Reservations[*].Instances[*].[PrivateIpAddress]' --output text)
     - echo $IP_PRIVATE > variables.env
@@ -68,7 +69,6 @@ dns:
   artifacts:
     paths:
       - variables.env
-  when: manual
 
 dns:new:
   image:
@@ -116,7 +116,6 @@ deploy:
   stage: deploy
   cache: {}
   script:
-    - source variables.env
     - eval `ssh-agent -s`
     - echo "${SSH_PRIVATE_KEY}" | base64 -d | ssh-add - > /dev/null
     - |
