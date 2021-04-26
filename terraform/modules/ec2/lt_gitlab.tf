@@ -7,8 +7,8 @@ output "script" {
   value = local.script
 }
 
-resource "aws_launch_template" "wonder-backend" {
-  name_prefix            = "wonder-backend"
+resource "aws_launch_template" "wonder-jvm" {
+  name_prefix            = "wonder-jvm"
   image_id               = var.instance_ami
   instance_type          = var.instance_type
   vpc_security_group_ids = [data.aws_security_group.main.id]
@@ -21,7 +21,7 @@ resource "aws_launch_template" "wonder-backend" {
     resource_type = "instance"
 
     tags = {
-      Name        = "wonder-backend",
+      Name        = "wonder-jvm",
       terraform   = "true",
       environment = var.env_name
     }

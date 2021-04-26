@@ -1,4 +1,4 @@
-resource "aws_autoscaling_group" "wonder-backend" {
+resource "aws_autoscaling_group" "wonder-jvm" {
   desired_capacity    = var.instance_count_desired
   max_size            = var.instance_count_max
   min_size            = var.instance_count_min
@@ -35,7 +35,7 @@ resource "aws_autoscaling_group" "wonder-backend" {
 
     launch_template {
       launch_template_specification {
-        launch_template_id = aws_launch_template.wonder-backend.id
+        launch_template_id = aws_launch_template.wonder-jvm.id
         version            = "$Latest"
       }
 
