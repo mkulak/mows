@@ -126,12 +126,14 @@ val buildJs by tasks.registering(Copy::class) {
     dependsOn(tasks.getByName<Task>("jsBrowserDevelopmentWebpack"))
     from("src/jvmMain/resources", "build/distributions")
     into("output")
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 val buildProdJs by tasks.registering(Copy::class) {
     dependsOn(tasks.getByName<Task>("jsBrowserProductionWebpack"))
     from("src/jvmMain/resources", "build/distributions")
     into("output")
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks.getByName<ShadowJar>("shadowJar") {

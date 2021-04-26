@@ -96,11 +96,11 @@ suspend fun retrieveMetrics(): String {
     return raw.split("\n").filter { "tick_duration{quantile=\"0.9" in it }.joinToString("\n")
 }
 
-private fun printResults(bots: List<Bot>, rooms: Int, duration: Int, metrics: String) {
-    val sentCount = bots.sumBy { it.sentCount }
-    val sentSize = bots.sumByLong { it.sentSize }
-    val receivedCount = bots.sumBy { it.receivedCount }
-    val receivedSize = bots.sumByLong { it.receivedSize }
+fun printResults(bots: List<Bot>, rooms: Int, duration: Int, metrics: String) {
+    val sentCount = bots.sumOf { it.sentCount }.coerceAtLeast(1)
+    val sentSize = bots.sumOf { it.sentSize }
+    val receivedCount = bots.sumOf { it.receivedCount }.coerceAtLeast(1)
+    val receivedSize = bots.sumOf { it.receivedSize }
     println("bots: ${bots.size}")
     println("rooms: $rooms")
     println("duration: ${duration}s")
@@ -150,7 +150,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         }
     }
 
-    private fun trySendPing(ws: WebSocket) {
+    fun trySendPing(ws: WebSocket) {
         val now = System.currentTimeMillis()
         if (now - lastPingSentAt < 1000) {
             return
@@ -160,12 +160,12 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         sendCommand(ws, PingCommand(pingId))
     }
 
-    private fun handleException(e: Throwable) {
+    fun handleException(e: Throwable) {
         logger.error("Bot #${bot} from room ${room} got error: $e")
         quitAbruptly = true
     }
 
-    private suspend fun connect(): WebSocket =
+    suspend fun connect(): WebSocket =
         awaitResult { handler ->
             val (host, port) = hostAndPort.split(":")
             val options = WebSocketConnectOptions()
@@ -179,7 +179,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
             }
         }
 
-    private fun handleMessage(res: String) {
+    fun handleMessage(res: String) {
         val time = System.currentTimeMillis()
         receivedCount++
         receivedSize += res.length
@@ -205,16 +205,16 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
         }
     }
 
-    private fun sendCommand(ws: WebSocket, command: ClientCommand) {
+    fun sendCommand(ws: WebSocket, command: ClientCommand) {
         val str = json.encodeToString(command)
         ws.writeTextMessage(str)
         sentCount++
         sentSize += str.length
     }
 
-    private fun randomPoint() = XY(nextDouble(MAP_WIDTH), nextDouble(MAP_HEIGHT)).round()
+    fun randomPoint() = XY(nextDouble(MAP_WIDTH), nextDouble(MAP_HEIGHT)).round()
 
-    private tailrec fun advancePos() {
+    tailrec fun advancePos() {
         val diff = target - pos
         val diffLen = diff.length()
         if (diffLen > 1) {
