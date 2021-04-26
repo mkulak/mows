@@ -64,6 +64,7 @@ dns:
   script:
     - export IP_PRIVATE=$(aws --region eu-central-1 ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=wonder-web" --query 'Reservations[*].Instances[*].[PrivateIpAddress]' --output text)
     - echo $IP_PRIVATE > variables.env
+    - cat variables.env
   artifacts:
     paths:
       - variables.env
@@ -115,6 +116,7 @@ deploy:
   stage: deploy
   cache: {}
   script:
+    - source variables.env
     - eval `ssh-agent -s`
     - echo "${SSH_PRIVATE_KEY}" | base64 -d | ssh-add - > /dev/null
     - |
