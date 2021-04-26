@@ -142,4 +142,8 @@ tasks.getByName<ShadowJar>("shadowJar") {
     archiveVersion.set("")
 }
 
+tasks.getByName<Copy>("jvmProcessResources") {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
 tasks.named("build") { dependsOn(tasks.named("shadowJar")) }
