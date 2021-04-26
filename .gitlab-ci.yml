@@ -62,7 +62,7 @@ dns:
     name: 791841456797.dkr.ecr.eu-central-1.amazonaws.com/base:latest
   stage: build
   script:
-    - export IP_PRIVATE=$(aws --region eu-central-1 ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=wonder-web" --query 'Reservations[*].Instances[*].[PrivateIpAddress]' --output text)
+    - export IP_PRIVATE=$(aws --region eu-central-1 ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=wonder-jvm" --query 'Reservations[*].Instances[*].[PrivateIpAddress]' --output text)
     - echo $IP_PRIVATE > variables.env
     - cat variables.env
   artifacts:
@@ -75,9 +75,9 @@ dns:new:
     name: 791841456797.dkr.ecr.eu-central-1.amazonaws.com/base:latest
   stage: build
   script:
-    - export IP_PRIVATE=$(aws --region eu-central-1 ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=wonder-web" --query 'Reservations[*].Instances[*].[PrivateIpAddress]' --output text)
+    - export IP_PRIVATE=$(aws --region eu-central-1 ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=wonder-jvm" --query 'Reservations[*].Instances[*].[PrivateIpAddress]' --output text)
     - echo host=$IP_PRIVATE > variables.env
-    - export IP_PUBLIC=$(aws --region eu-central-1 ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=wonder-web" --query 'Reservations[*].Instances[*].[PublicIpAddress]' --output text)
+    - export IP_PUBLIC=$(aws --region eu-central-1 ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=wonder-jvm" --query 'Reservations[*].Instances[*].[PublicIpAddress]' --output text)
     - |
       cat <<EOF > update-set.json
         {
