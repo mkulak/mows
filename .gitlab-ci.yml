@@ -112,7 +112,6 @@ deploy:
   script:
     - eval `ssh-agent -s`
     - echo "${SSH_PRIVATE_KEY}" | base64 -d | ssh-add - > /dev/null
-    - chmod +x multi-scp.sh
     - |
       cat <<'EOF' > multi-scp.sh
         #!/bin/bash
@@ -120,6 +119,7 @@ deploy:
           echo "$p"
         done <variables.env
       EOF
+    - chmod +x multi-scp.sh
     - cat multi-scp.sh
     - ls -la multi-scp.sh
     #- scp -r -o StrictHostKeyChecking=no build/ ec2-user@$host:~
