@@ -22,7 +22,7 @@ variables:
     - gitlab-terraform plan-json
     - gitlab-terraform apply
   cache:
-    key: "terraform-wonder-backend-${env_name}"
+    key: "terraform-wonder-jvm-${env_name}"
     paths:
       - "${CI_PROJECT_DIR}/terraform/environment/${env_name}/.terraform"
   artifacts:
@@ -42,7 +42,7 @@ terraform:
     TF_STATE_NAME: dev
     env_name: dev
 
-## Node stages
+## Kotlin stages
 build:
   stage: build
   script:
