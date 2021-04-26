@@ -1,4 +1,4 @@
-image: gradle:6
+image: gradle:latest
 
 stages:
   - terraform
