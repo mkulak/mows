@@ -131,7 +131,7 @@ deploy:
         set -x
         while read line; do
           for ip in $line; do
-            ssh -o BatchMode=yes -o StrictHostKeyChecking=no ec2-user@"$ip" pwd
+            ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no ec2-user@"$ip" pwd
           done
         done <variables.env
       EOF
