@@ -27,7 +27,7 @@ suspend fun main() {
     val scope = CoroutineScope(vertx.dispatcher())
     val ticker = RoomTicker(scope, gameService, registry)
     ticker.start()
-    vertx.createHttpServer()
+    vertx.createHttpServer(HttpServerOptions().setPerMessageWebSocketCompressionSupported(false))
         .requestHandler(httpApi)
         .webSocketHandler(wsApi)
         .exceptionHandler { it.printStackTrace() }
