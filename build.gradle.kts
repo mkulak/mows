@@ -1,7 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 
-
 plugins {
     kotlin("multiplatform") version "1.5.0-RC"
     kotlin("plugin.serialization") version "1.5.0-RC"
@@ -23,7 +22,12 @@ repositories {
 kotlin {
     jvm {
         compilations.all {
-            kotlinOptions.jvmTarget = "11"
+            kotlinOptions {
+                jvmTarget = "11"
+                languageVersion = "1.5"
+                apiVersion = "1.5"
+                useIR = true
+            }
         }
         testRuns["test"].executionTask.configure {
             useJUnit()
