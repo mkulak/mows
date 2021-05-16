@@ -3,7 +3,6 @@ package client
 import common.XY
 import common.ZERO_XY
 import common.length
-import common.minus
 import common.normalize
 import common.times
 import kotlinx.browser.window
@@ -63,11 +62,7 @@ class InputModule(val gameLogic: GameLogic) {
     private fun tryMove(dt: Double) {
         val myPos = gameLogic.room.me()?.pos
         if (myPos != null && isMouseDown) {
-            val dxy = lastMousePos - myPos
-            val length = dxy.length()
-            if (length > 1) {
-                gameLogic.changePos(dxy.normalize() * (dt * MOVE_SPEED).coerceAtMost(length))
-            }
+            gameLogic.changePos(move(myPos, lastMousePos, dt, true))
         }
     }
 

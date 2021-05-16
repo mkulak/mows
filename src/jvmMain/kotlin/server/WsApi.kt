@@ -25,12 +25,10 @@ class WsApi(val json: Json) : Handler<ServerWebSocket> {
             handleClientCommand(msg, playerId)
         }
         ws.closeHandler {
-            logger.info("Disconnected $playerId")
             gameService.onLeave(playerId)
             clients.remove(playerId)
         }
         val roomId = RoomId(ws.path().removePrefix("/rooms/")).takeIf { it.value.isNotEmpty() }
-        logger.info("Joined $playerId on ${ws.path()}, roomId: $roomId")
         gameService.onJoin(playerId, roomId)
     }
 

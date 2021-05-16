@@ -2,5 +2,3 @@ package server
 
 val MAP_WIDTH = 1000.0
 val MAP_HEIGHT = 500.0
-val UPDATE_SEND_INTERVAL = 100
-val TICK_FREQUENCY = 50

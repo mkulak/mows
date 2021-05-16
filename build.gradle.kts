@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 
 
 plugins {
-    kotlin("multiplatform") version "1.4.32"
-    kotlin("plugin.serialization") version "1.4.32"
+    kotlin("multiplatform") version "1.5.0"
+    kotlin("plugin.serialization") version "1.5.0"
     application
     id("com.github.johnrengelman.shadow") version "4.0.4"
 }
@@ -30,7 +30,7 @@ kotlin {
         }
         withJava()
     }
-    js(LEGACY) {
+    js(IR) {
         browser {
             binaries.executable()
             webpackTask {
