@@ -15,6 +15,7 @@ import common.times
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.vertx.core.Vertx
+import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.http.WebSocket
 import io.vertx.core.http.WebSocketConnectOptions
 import io.vertx.ext.web.client.WebClient
@@ -77,7 +78,8 @@ suspend fun main(args: Array<String>) {
     println("started waiting")
     delay(duration * 1000L)
     println("retrieving metrics")
-    val metrics = retrieveMetrics()
+//    val metrics = retrieveMetrics()
+    val metrics = ""
     scope.coroutineContext[Job]?.cancelChildren(StopTest())
     println("shutting down")
     tasks.forEach { it.join() }
@@ -173,7 +175,8 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
                 .setHost(host)
                 .setPort(port.toInt())
                 .setURI("/rooms/$room")
-            vertx.createHttpClient().webSocket(options) {
+            val httpOptions = HttpClientOptions().setMaxWebSocketFrameSize(64_000_000)
+            vertx.createHttpClient(httpOptions).webSocket(options) {
                 it.result()?.textMessageHandler(::handleMessage)?.exceptionHandler(::handleException)
                 handler.handle(it)
             }
