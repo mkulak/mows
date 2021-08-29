@@ -30,7 +30,7 @@ kotlin {
         }
         withJava()
     }
-    js(IR) {
+    js(LEGACY) {
         browser {
             binaries.executable()
             webpackTask {
@@ -61,15 +61,16 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation("io.vertx:vertx-web:4.0.0")
-                implementation("io.vertx:vertx-web-client:4.0.0")
-                implementation("io.vertx:vertx-lang-kotlin:4.0.0")
-                implementation("io.vertx:vertx-lang-kotlin-coroutines:4.0.0")
+                implementation("io.vertx:vertx-web:4.0.3")
+                implementation("io.vertx:vertx-web-client:4.0.3")
+                implementation("io.vertx:vertx-lang-kotlin:4.0.3")
+                implementation("io.vertx:vertx-lang-kotlin-coroutines:4.0.3")
                 implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.2")
                 implementation("com.fasterxml.jackson.module:jackson-modules-java8:2.11.2")
                 implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.2")
                 implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.2")
-                implementation("io.micrometer:micrometer-core:1.6.6")
+                implementation("io.micrometer:micrometer-core:1.7.0")
+                implementation("io.micrometer:micrometer-registry-prometheus:1.7.0")
                 implementation("io.vertx:vertx-micrometer-metrics:4.0.3")
                 implementation("org.apache.logging.log4j:log4j-core:2.13.3")
                 implementation("org.apache.logging.log4j:log4j-api:2.13.3")

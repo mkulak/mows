@@ -4,7 +4,9 @@ import client.InputModule
 import client.NetworkModule
 import kotlinx.browser.document
 import kotlinx.browser.window
+import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
+import kotlin.math.floor
 
 var lastTime: Double? = null
 
@@ -20,7 +22,20 @@ fun main() {
         networkModule.connect()
     }
     window.onload = {
-        view.init(document.getElementById("root") as HTMLCanvasElement)
+        val canvas = document.getElementById("root") as HTMLCanvasElement
+        val w = 1000
+        val h = 500
+        val scale = window.devicePixelRatio
+        val scaledWidth = floor(w * scale).toInt()
+        val scaledHeight = floor(h * scale).toInt()
+        canvas.style.width = "${w}px"
+        canvas.style.height = "${h}px"
+        canvas.width = scaledWidth
+        canvas.height = scaledHeight
+        val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+        ctx.scale(scale, scale)
+
+        view.init(ctx, canvas.width, canvas.height)
         gameLogic.networkModule = networkModule
         inputModule.init()
         networkModule.connect()

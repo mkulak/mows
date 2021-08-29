@@ -77,7 +77,7 @@ suspend fun main(args: Array<String>) {
     println("started waiting")
     delay(duration * 1000L)
     println("retrieving metrics")
-//    val metrics = retrieveMetrics()
+    val metrics = retrieveMetrics()
     scope.coroutineContext[Job]?.cancelChildren(StopTest())
     println("shutting down")
     tasks.forEach { it.join() }
@@ -86,7 +86,7 @@ suspend fun main(args: Array<String>) {
     if (deadBotsCount != 0) {
         println("WARNING: $deadBotsCount bots died. Results are affected")
     }
-    printResults(bots, rooms, duration, "metrics")
+    printResults(bots, rooms, duration, metrics)
 }
 
 suspend fun retrieveMetrics(): String {
@@ -134,6 +134,7 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
             startedAt = System.currentTimeMillis()
             delay(nextLong(3000))
             val ws = connect()
+//            ws.writeTextMessage("blah")
             while (coroutineContext.isActive && !quitAbruptly) {
                 if (receivedFullUpdate) {
                     trySendPing(ws)
@@ -224,14 +225,6 @@ class Bot(val vertx: Vertx, val bot: Int, val room: Int, val walking: Boolean) {
             advancePos()
         }
     }
-}
-
-inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
-    var sum: Long = 0
-    for (element in this) {
-        sum += selector(element)
-    }
-    return sum
 }
 
 fun timer(name: String, desc: String = ""): Timer =

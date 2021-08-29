@@ -1,19 +1,17 @@
 package client
 
 import org.w3c.dom.CanvasRenderingContext2D
-import org.w3c.dom.HTMLCanvasElement
 import kotlin.math.PI
-
 
 class GameView {
     lateinit var ctx: CanvasRenderingContext2D
     var width: Double = 1.0
     var height: Double = 1.0
 
-    fun init(canvas: HTMLCanvasElement) {
-        width = canvas.width.toDouble()
-        height = canvas.height.toDouble()
-        ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+    fun init(ctx: CanvasRenderingContext2D, width: Int, height: Int) {
+        this.width = width.toDouble()
+        this.height = height.toDouble()
+        this.ctx = ctx
     }
 
     fun draw(room: Room) {
